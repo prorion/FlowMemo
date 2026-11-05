@@ -1,98 +1,59 @@
-# Pinny Notes
+# FlowMemo
 
-[![Latest Release](https://img.shields.io/github/v/release/63BeetleSmurf/PinnyNotes?style=flat-square)](https://github.com/63BeetleSmurf/PinnyNotes/releases)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg?style=flat-square)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
-[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows)](https://github.com/63BeetleSmurf/PinnyNotes)
-[![Liberapay receiving](https://img.shields.io/liberapay/receives/63BeetleSmurf?style=flat-square&logo=liberapay&label=Sponsor)](https://liberapay.com/63BeetleSmurf/donate)
-[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=flat-square&logo=github)](https://github.com/sponsors/63BeetleSmurf)
-[![Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-29abe0?style=flat-square&logo=ko-fi)](https://ko-fi.com/63BeetleSmurf)
-[![Buy Me A Coffee](https://img.shields.io/badge/Donate-Buy%20Me%20a%20Coffee-ffdd00?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/63BeetleSmurf)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows)](https://github.com/prorion/FlowMemo)
 
-![Pinny Notes Screenshot](assets/Screenshot.png)
+![FlowMemo 스크린샷](assets/Screenshot.png)
 
 
-## 📢 About
+## 📢 소개
 
-**Pinny Notes** is a versatile sticky note application that lets you "pin" notes, keeping them always on top of other windows. It also offers a variety of handy tools accessible via right-click menus.
-
-
-## 🚀 Features
-
-- **Pin / Always on Top:** Keep notes visible above all other windows.
-- **Auto Save:** Automatically saves notes.
-- **Block Minimizing:** Prevent notes from being minimized, even with the Show Desktop button.
-- **Colours:** Choose from multiple colours or have new notes cycle through them automatically.
-- **Dark Mode:** Dark theme with colour-matched accents.
-- **Transparency:** Make notes semi-transparent so content behind them can still be seen.
-- **Start Position:** Set where on the screen your notes will open.
-- **Advanced Copy/Paste Actions**
-  - **Copy/Paste Trim:** Automatically trim whitespace when copying or pasting.
-  - **Middle Click Paste:** Quickly paste clipboard contents with a middle-click.
-  - **Copy on Click:** Hold Ctrl and click to copy selected text.
-  - **Auto Copy:** Automatically copy text when highlighted.
-  - **No Selection Copy Behaviour:** Choose whether to copy the current line, full note, or nothing when no text is selected.
-- **Advanced Selection:**
-  - **Triple-click:** Select current line.
-  - **Quadruple-click:** Select the full line ignoring wrapping.
-- **Indent Text:** Indent selected text by pressing the tab key.
-- **Auto Indent:** Indent new lines to match the previous line.
-- **Ends with New Line:** Ensures notes always end with a newline.
-- **Auto Scroll:** Automatically scroll to keep the last line visible, making it easy when pasting text.
-- **Spell Checking:** Integrated spell checker.
-- **Counts Menu:** View line, word, and character counts for selected or full text.
-- **Tray Icon:** Easily bring all notes to the front or launch new notes from the system tray.
-- **Note Visibility:** Show or hide note windows from the Taskbar and Task Switcher (Alt+Tab and Win+Tab)
-- **Lock Text:** Make a note read only preventing the text from being edited until unlocked.
+**FlowMemo**는 Windows용 포스트잇 메모 앱입니다. 메모를 다른 창 위에 고정(핀)해 두고, 우클릭 메뉴로 여러 텍스트 도구를 쓸 수 있습니다.
 
 
-## 🛠️ Tools
+## 📜 원본 프로젝트와 라이선스
 
-- **Base64:** Encode/decode Base64 text.
-- **Bracket:** Add/remove parentheses, square or curly brackets.
-- **Case:** Convert to lower, upper, or proper case.
-- **Colour:** Convert RGB to and from HEX values.
-- **DateTime:** Get current or convert a dat eto a sortable format or the week number of the year.
-- **Gibberish:** Generate gibberish words, sentences, paragraphs, articles, and names.
-- **GUID:** Generate GUID/UUID's.
-- **Hash:** Generate MD5, SHA1, SHA256/384/512 hashes.
-- **HTML Entities:** Encode/decode HTML entities.
-- **Indent:** Indent all lines using 2/4 spaces or tabs.
-- **Join:** Join multiple lines using commas, spaces, or tabs.
-- **JSON:** Prettify JSON data.
-- **List:** Add numbering or bullets (dash), sort lines, or remove list markers.
-- **Quote:** Add or remove single, double, or backtick quotes.
-- **Remove:** Strip whitespace, slashes, or repeated text.
-- **Slash:** Toggle or remove forward/back slashes.
-- **Split:** Split text by commas, tabs, spaces, or selected patterns.
-- **Trim:** Remove line-leading/trailing whitespace or blank lines.
-- **URL:** Encode and decode text for use in URLs.
+FlowMemo는 [63BeetleSmurf](https://github.com/63BeetleSmurf)의 [Pinny Notes](https://github.com/63BeetleSmurf/PinnyNotes) v1.17.0을 포크해 수정한 프로그램입니다.
+
+- 원본과 같은 **GNU General Public License v2.0**을 따릅니다. 전문은 [LICENSE.txt](LICENSE.txt)에 있습니다.
+- 원본에서 바뀐 내용과 날짜는 이 저장소의 커밋 기록과 [CHANGELOG.md](CHANGELOG.md)에 남깁니다.
+- 원본 개발자를 후원하고 싶다면 [Pinny Notes 저장소](https://github.com/63BeetleSmurf/PinnyNotes)를 참고하세요.
 
 
-## 💾 Installation (Windows Only)
+## 🚀 주요 기능
 
-### 🔧 Installer
+- **핀 / 항상 위:** 메모를 다른 창보다 위에 띄워 둡니다.
+- **자동 저장**
+- **최소화 막기:** '바탕 화면 보기'를 눌러도 메모가 최소화되지 않게 할 수 있습니다.
+- **색상·다크 모드·투명도**
+- **시작 위치:** 새 메모가 화면 어디에 열릴지 정합니다.
+- **복사/붙여넣기 옵션:** 공백 자동 제거, 가운데 클릭 붙여넣기, 선택 시 자동 복사, 선택이 없을 때 줄/전체 복사
+- **선택:** 세 번 클릭으로 한 줄, 네 번 클릭으로 줄바꿈을 무시한 한 줄 선택
+- **들여쓰기:** Tab으로 선택 영역 들여쓰기, 새 줄 자동 들여쓰기
+- **맞춤법 검사:** Windows 맞춤법 검사기를 씁니다(지원하지 않는 언어에서는 자동으로 꺼집니다).
+- **줄·단어·글자 수 보기**
+- **트레이 아이콘:** 모든 메모를 앞으로 가져오거나 새 메모를 엽니다.
+- **작업 표시줄 / Alt+Tab 표시 여부 설정**
+- **텍스트 잠금:** 메모를 읽기 전용으로 바꿉니다.
 
-1. Go to the [Releases page](https://github.com/63BeetleSmurf/PinnyNotes/releases).
-2. Download the latest `.msi` installer and run it.
 
-### 👜 Portable Version
+## 🛠️ 텍스트 도구
 
-1. Download the latest `.zip` file from the [Releases page](https://github.com/63BeetleSmurf/PinnyNotes/releases).
-2. Extract it and run `Pinny Notes.exe`.
-
-> **⚠️ Linux Support Notice**
->
-> A Linux version has been requested, but one is **not planned**. Pinny Notes is built using **WPF**, which is Windows-only. Even with a cross-platform framework, modern Linux desktops using **Wayland** do not allow applications to reliably set window positions or enforce “always on top” behaviour, both of which are core features of Pinny Notes.
+Base64, 괄호, 대소문자, 색상(RGB↔HEX), 날짜·시간, 더미 텍스트, GUID, 해시(MD5/SHA), HTML 엔티티, 들여쓰기, 줄 합치기, JSON 정렬, 목록, 따옴표, 제거, 슬래시, 나누기, 공백 정리, URL 인코딩
 
 
-## ❤️ Support Development
+## 🔨 빌드
 
-Pinny Notes is developed in my spare time. If you find it helpful, please consider donating or sponsoring;
+필요한 것: Windows, [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
-<noscript><a href="https://liberapay.com/63BeetleSmurf/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
+```powershell
+dotnet build FlowMemo.WpfUi -c Release
+```
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/63BeetleSmurf)
+실행 파일은 `FlowMemo.WpfUi\bin\Release\net10.0-windows\FlowMemo.exe`에 생깁니다.
 
-<a href="https://www.buymeacoffee.com/63BeetleSmurf" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+- **데이터 위치:** 기본은 `%APPDATA%\FlowMemo\flowmemo.sqlite`입니다.
+- **포터블 모드:** `FlowMemo.exe` 옆에 빈 `portable.txt` 파일을 두면 DB를 exe 폴더에 만듭니다.
+- **설치 파일(MSI):** `FlowMemo.Setup`은 Visual Studio와 *Microsoft Visual Studio Installer Projects* 확장이 있어야 빌드됩니다.
 
-Every bit of support is appreciated 🙏
+> WPF 기반이라 Windows에서만 동작합니다.

@@ -1,0 +1,57 @@
+﻿using System.Text.Json;
+
+using FlowMemo.Core.Enums;
+using FlowMemo.WpfUi.Commands;
+using FlowMemo.WpfUi.Controls;
+
+namespace FlowMemo.WpfUi.Tools;
+
+public class JsonTool : BaseTool, ITool
+{
+    private enum ToolActions
+    {
+        JsonPrettify
+    }
+
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
+    {
+        WriteIndented = true
+    };
+
+    public JsonTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
+    {
+        InitializeMenuItem(
+            "JSON",
+            [
+                new ToolMenuAction("Prettify", new RelayCommand(() => MenuAction(ToolActions.JsonPrettify)))
+            ]
+        );
+    }
+
+    public ToolState State => ToolSettings.JsonToolState;
+
+    private void MenuAction(ToolActions action)
+    {
+        ApplyFunctionToNoteText(ModifyTextCallback, action);
+    }
+
+    private string ModifyTextCallback(string text, Enum action)
+    {
+        try
+        {
+            switch (action)
+            {
+                case ToolActions.JsonPrettify:
+                    object? jsonObject = JsonSerializer.Deserialize<object>(text);
+                    if (jsonObject != null)
+                        return JsonSerializer.Serialize<object>(jsonObject, _jsonSerializerOptions);
+                    break;
+            }
+        }
+        catch
+        {
+        }
+
+        return text;
+    }
+}
