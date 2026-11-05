@@ -6,6 +6,9 @@
 ### Changed
 - 프로젝트 이름을 Pinny Notes에서 FlowMemo로 변경 (네임스페이스, 실행 파일 `FlowMemo.exe`, 데이터 폴더 `%APPDATA%\FlowMemo`, DB `flowmemo.sqlite`, 단일 실행 ID, MSI 제품 코드, 업데이트 확인 주소).
 
+### Fixed
+- Windows 맞춤법 검사기가 지원하지 않는 언어(예: 한국어)에서 노트 창이 열리지 않던 문제.
+
 
 > 아래 v1.17.0 이하 기록은 원본 [Pinny Notes](https://github.com/63BeetleSmurf/PinnyNotes)의 변경 이력입니다.
 

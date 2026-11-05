@@ -12,15 +12,24 @@ public class BackgroundSpellChecker : IDisposable
 
     public BackgroundSpellChecker(string languageTag)
     {
-        ISpellCheckerFactory factory = (ISpellCheckerFactory)new SpellCheckerFactoryCoClass();
+        // Leave _spellChecker null when the language is unsupported (e.g. ko-KR)
+        // or the factory fails. Every public method already treats null as
+        // "spell check disabled", so the note window still opens.
+        try
+        {
+            ISpellCheckerFactory factory = (ISpellCheckerFactory)new SpellCheckerFactoryCoClass();
 
-        factory.IsSupported(languageTag, out bool isSupported);
-        if (!isSupported)
-            throw new InvalidOperationException($"Language '{languageTag}' is not supported by Windows Spell Checker.");
+            factory.IsSupported(languageTag, out bool isSupported);
+            if (!isSupported)
+                return;
 
-        factory.CreateSpellChecker(languageTag, out _spellChecker);
-        if (_spellChecker is null)
-            throw new InvalidOperationException($"Failed to create spell checker for language '{languageTag}'.");
+            factory.CreateSpellChecker(languageTag, out _spellChecker);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Spell checker unavailable for '{languageTag}': {ex.Message}");
+            _spellChecker = null;
+        }
     }
 
     public List<BackgroundSpellingError> CheckText(string text)
