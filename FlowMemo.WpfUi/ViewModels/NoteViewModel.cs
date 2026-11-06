@@ -291,7 +291,15 @@ public class NoteViewModel : BaseViewModel
         {
             Window[] otherWindows = new Window[Application.Current.Windows.Count];
             Application.Current.Windows.CopyTo(otherWindows, 0);
-            while (otherWindows.Any(w => w.Left == position.X && w.Top == position.Y))
+
+            // 예전에는 Left/Top을 ==로 비교했다. 125% 배율 등에서는 창 위치가 픽셀→DIP 변환을 거쳐
+            // 78이 78.4가 되므로 같은 자리로 보지 않았고, 새 메모가 기존 메모와 정확히 겹쳐 열렸다
+            // (기존 메모가 고정돼 있으면 새 메모가 그 뒤에 완전히 가려졌다 — 실제 사용 중 발견).
+            const double sameSpotTolerance = 8;
+            bool IsOccupied(Point p) => otherWindows.Any(w =>
+                Math.Abs(w.Left - p.X) < sameSpotTolerance && Math.Abs(w.Top - p.Y) < sameSpotTolerance);
+
+            while (IsOccupied(position))
             {
                 double newX = position.X + (noteMargin * Note.GravityX);
                 if (newX < screenBounds.Left)

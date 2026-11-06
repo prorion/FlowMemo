@@ -81,7 +81,10 @@ public partial class NoteWindow : Window
         InputBindings.Add(new KeyBinding(new Commands.RelayCommand(OpenChildNote), Key.N, ModifierKeys.Control));
 
         PopulateTitleBarContextMenu();
+        UpdatePinButtonState();
     }
+
+    private readonly Dictionary<string, MenuItem> _colourMenuItems = [];
 
     /// <summary>메모를 앞으로 가져온다 (최소화돼 있으면 복원).</summary>
     public void ActivateNote()
@@ -105,13 +108,48 @@ public partial class NoteWindow : Window
                 Header = colourScheme.DisplayName,
                 Command = _viewModel.ChangeThemeColourCommand,
                 CommandParameter = colourScheme.Name, // DB에는 영어 키(Yellow 등)를 그대로 저장한다.
-                Icon = colourScheme.Icon
+                // 예전에는 ColourScheme.Icon 하나를 모든 메모 창이 같이 써서, 메모가 여러 개면
+                // 한 메모의 메뉴를 열 때 다른 메모 메뉴의 색 견본이 사라졌다 (화면 요소는 부모가 하나뿐).
+                Icon = new System.Windows.Shapes.Rectangle
+                {
+                    Width = 16,
+                    Height = 16,
+                    Fill = new System.Windows.Media.SolidColorBrush(colourScheme.IconColour)
+                }
             };
 
             TitleBarContextMenu.Items.Insert(insertIndex, menuItem);
+            _colourMenuItems[colourScheme.Name] = menuItem;
 
             insertIndex++;
         }
+
+        UpdateColourChecks();
+    }
+
+    /// <summary>
+    /// 지금 메모 색에 선택 표시를 한다 (예전에는 현재 색을 알 수 없었다).
+    /// Fluent 테마는 아이콘이 있는 항목에 IsChecked를 켜도 체크를 그리지 않아서, 오른쪽에 ✓를 붙이고 굵게 한다.
+    /// </summary>
+    private void UpdateColourChecks()
+    {
+        foreach ((string name, MenuItem item) in _colourMenuItems)
+        {
+            bool isCurrent = name == _viewModel.Note.ThemeColourScheme;
+            item.InputGestureText = isCurrent ? "✓" : "";
+            item.FontWeight = isCurrent ? FontWeights.SemiBold : FontWeights.Normal;
+        }
+    }
+
+    /// <summary>고정 상태에 따라 고정 버튼의 툴팁과 진하기를 바꾼다 (예전에는 아이콘 각도만 달라 알아보기 어려웠다).</summary>
+    private void UpdatePinButtonState()
+    {
+        bool pinned = _viewModel.Note.IsPinned;
+        PinButton.ToolTip = pinned ? Strings.Note_Pinned_ToolTip : Strings.Note_Pin_ToolTip;
+        if (pinned)
+            PinButton.Opacity = 1.0;
+        else
+            PinButton.ClearValue(OpacityProperty);
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -192,7 +230,14 @@ public partial class NoteWindow : Window
     private void OnNotePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(NoteModel.IsPinned))
+        {
+            UpdatePinButtonState();
             Dispatcher.BeginInvoke(DispatcherPriority.Background, SyncTopmostState);
+        }
+        else if (e.PropertyName == nameof(NoteModel.ThemeColourScheme))
+        {
+            UpdateColourChecks();
+        }
     }
 
     private void SyncTopmostState()

@@ -485,204 +485,7 @@
                         <TextBlock Margin="0,0,0,8" TextWrapping="Wrap" FontStyle="Italic"
                                    Text="{x:Static res:Strings.Settings_ToolsNotice}" />
 
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.Base64ToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Base64}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.BracketToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Bracket}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.CaseToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Case}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.ColourToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Colour}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.DateTimeToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_DateTime}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.GibberishToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Gibberish}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.GuidToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Guid}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.HashToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Hash}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.HtmlEntityToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_HtmlEntity}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.IndentToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Indent}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.JoinToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Join}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.JsonToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Json}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.ListToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_List}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.QuoteToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Quote}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.RemoveToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Remove}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.SlashToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Slash}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.SortToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Sort}"/>
-                            </DockPanel>
-                        </Border>
-
-                        <Border>
-                            <DockPanel LastChildFill="True">
-                                <ComboBox DockPanel.Dock="Right"
-                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
-                                          SelectedValuePath="Key"
-                                          DisplayMemberPath="Value"
-                                          SelectedValue="{Binding ToolSettings.SplitToolState, Mode=TwoWay}" />
-                                <TextBlock Text="{x:Static res:Strings.Tool_Split}"/>
-                            </DockPanel>
-                        </Border>
-
+                        <TextBlock Margin="0,4,0,4" FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_ToolGroup_Clean}" />
                         <Border>
                             <DockPanel LastChildFill="True">
                                 <ComboBox DockPanel.Dock="Right"
@@ -693,7 +496,118 @@
                                 <TextBlock Text="{x:Static res:Strings.Tool_Trim}"/>
                             </DockPanel>
                         </Border>
-
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.RemoveToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Remove}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.JoinToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Join}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.SplitToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Split}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.SortToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Sort}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.ListToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_List}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.IndentToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Indent}"/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Margin="0,12,0,4" FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_ToolGroup_Wrap}" />
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.BracketToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Bracket}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.QuoteToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Quote}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.SlashToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Slash}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.CaseToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Case}"/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Margin="0,12,0,4" FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_ToolGroup_Convert}" />
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.Base64ToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Base64}"/>
+                            </DockPanel>
+                        </Border>
                         <Border>
                             <DockPanel LastChildFill="True">
                                 <ComboBox DockPanel.Dock="Right"
@@ -702,6 +616,77 @@
                                           DisplayMemberPath="Value"
                                           SelectedValue="{Binding ToolSettings.UrlToolState, Mode=TwoWay}" />
                                 <TextBlock Text="{x:Static res:Strings.Tool_Url}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.HtmlEntityToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_HtmlEntity}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.JsonToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Json}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.ColourToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Colour}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.HashToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Hash}"/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Margin="0,12,0,4" FontWeight="SemiBold" Text="{x:Static res:Strings.Settings_ToolGroup_Insert}" />
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.DateTimeToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_DateTime}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.GuidToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Guid}"/>
+                            </DockPanel>
+                        </Border>
+                        <Border>
+                            <DockPanel LastChildFill="True">
+                                <ComboBox DockPanel.Dock="Right"
+                                          ItemsSource="{Binding ToolStateList, Mode=OneTime}"
+                                          SelectedValuePath="Key"
+                                          DisplayMemberPath="Value"
+                                          SelectedValue="{Binding ToolSettings.GibberishToolState, Mode=TwoWay}" />
+                                <TextBlock Text="{x:Static res:Strings.Tool_Gibberish}"/>
                             </DockPanel>
                         </Border>
 

@@ -719,4 +719,22 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
   <data name="Management_OpenBadge" xml:space="preserve">
     <value>● 열림</value>
   </data>
+  <data name="Settings_ToolGroup_Clean" xml:space="preserve">
+    <value>정리</value>
+  </data>
+  <data name="Settings_ToolGroup_Wrap" xml:space="preserve">
+    <value>감싸기·바꾸기</value>
+  </data>
+  <data name="Settings_ToolGroup_Convert" xml:space="preserve">
+    <value>인코딩·변환</value>
+  </data>
+  <data name="Settings_ToolGroup_Insert" xml:space="preserve">
+    <value>넣기</value>
+  </data>
+  <data name="Note_Pinned_ToolTip" xml:space="preserve">
+    <value>항상 위에 고정됨 (누르면 해제)</value>
+  </data>
+  <data name="Note_Locked_ToolTip" xml:space="preserve">
+    <value>잠김 (읽기 전용) · 우클릭 메뉴의 &apos;잠금&apos;을 다시 누르면 풀립니다</value>
+  </data>
 </root>

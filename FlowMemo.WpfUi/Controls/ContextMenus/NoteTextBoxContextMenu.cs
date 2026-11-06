@@ -15,6 +15,7 @@ public class NoteTextBoxContextMenu : ContextMenu
     private readonly NoteTextBoxControl _noteTextBox;
 
     private readonly ITool[] _tools;
+    private readonly Dictionary<ITool, int> _toolGroup = [];
 
     private readonly MenuItem _copyMenuItem;
     private readonly MenuItem _cutMenuItem;
@@ -38,28 +39,25 @@ public class NoteTextBoxContextMenu : ContextMenu
 
         Style = Application.Current.FindResource(typeof(ContextMenu)) as Style;
 
-        _tools = [
-            new Base64Tool(_noteTextBox),
-            new BracketTool(_noteTextBox),
-            new CaseTool(_noteTextBox),
-            new ColourTool(_noteTextBox),
-            new DateTimeTool(_noteTextBox),
-            new GibberishTool(_noteTextBox),
-            new GuidTool(_noteTextBox),
-            new HashTool(_noteTextBox),
-            new HtmlEntityTool(_noteTextBox),
-            new IndentTool(_noteTextBox),
-            new JoinTool(_noteTextBox),
-            new JsonTool(_noteTextBox),
-            new ListTool(_noteTextBox),
-            new QuoteTool(_noteTextBox),
-            new RemoveTool(_noteTextBox),
-            new SlashTool(_noteTextBox),
-            new SortTool(_noteTextBox),
-            new SplitTool(_noteTextBox),
-            new TrimTool(_noteTextBox),
-            new UrlTool(_noteTextBox)
+        // 예전에는 영어 이름 알파벳 순서라 한국어로는 순서가 뒤섞여 보였다 (Base64, 괄호, 대소문자, 색상 코드...).
+        // 용도별로 묶고, 메뉴에서는 묶음 사이에 구분선을 넣는다.
+        ITool[][] groups =
+        [
+            // 정리
+            [new TrimTool(_noteTextBox), new RemoveTool(_noteTextBox), new JoinTool(_noteTextBox), new SplitTool(_noteTextBox),
+             new SortTool(_noteTextBox), new ListTool(_noteTextBox), new IndentTool(_noteTextBox)],
+            // 감싸기·바꾸기
+            [new BracketTool(_noteTextBox), new QuoteTool(_noteTextBox), new SlashTool(_noteTextBox), new CaseTool(_noteTextBox)],
+            // 인코딩·변환
+            [new Base64Tool(_noteTextBox), new UrlTool(_noteTextBox), new HtmlEntityTool(_noteTextBox), new JsonTool(_noteTextBox),
+             new ColourTool(_noteTextBox), new HashTool(_noteTextBox)],
+            // 넣기
+            [new DateTimeTool(_noteTextBox), new GuidTool(_noteTextBox), new GibberishTool(_noteTextBox)],
         ];
+        _tools = [.. groups.SelectMany(g => g)];
+        for (int g = 0; g < groups.Length; g++)
+            foreach (ITool tool in groups[g])
+                _toolGroup[tool] = g;
 
         _copyMenuItem = new()
         {
@@ -239,6 +237,7 @@ public class NoteTextBoxContextMenu : ContextMenu
         _toolMenuItems.Add(_toolsSeparator);
 
         bool hasEnabledTools = false;
+        int lastEnabledGroup = -1;
         foreach (ITool tool in activeTools)
         {
             switch (tool.State)
@@ -247,6 +246,10 @@ public class NoteTextBoxContextMenu : ContextMenu
                     _toolMenuItems.Add(tool.MenuItem);
                     break;
                 case ToolState.Enabled:
+                    int group = _toolGroup[tool];
+                    if (hasEnabledTools && group != lastEnabledGroup)
+                        _toolsMenuItem.Items.Add(new Separator());
+                    lastEnabledGroup = group;
                     _toolsMenuItem.Items.Add(tool.MenuItem);
                     hasEnabledTools = true;
                     break;

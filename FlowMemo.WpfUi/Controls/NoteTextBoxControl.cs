@@ -20,6 +20,7 @@ public partial class NoteTextBoxControl : TextBox
     private readonly BackgroundSpellChecker _spellChecker;
 
     private DispatcherTimer? _updateTimer;
+    private readonly DispatcherTimer _newLineTimer;
     private BackgroundSpellingErrorAdorner? _adorner;
     private ScrollViewer? _scrollViewer;
     private IEnumerable<BackgroundSpellingError> _currentErrors = [];
@@ -28,9 +29,15 @@ public partial class NoteTextBoxControl : TextBox
 
     private readonly NoteTextBoxContextMenu _contextMenu = null!;
 
-    // 한글 IME로 글자를 조합하는 중인지. 조합 중에 프로그램이 텍스트를 고치면
-    // (끝에 줄바꿈 붙이기 등) 조합이 끊겨 첫 글자가 자모로 흩어질 수 있다.
-    private bool _isImeComposing;
+    // 진행 중인 한글 IME 조합 수. 조합 중에 프로그램이 텍스트를 고치면
+    // (끝에 줄바꿈 붙이기 등) 조합이 끊겨 글자가 자모로 흩어진다 (실제 입력으로 확인: "한글" -> "한ㅡㄹ").
+    // - 한국어 IME는 앞 글자의 조합 완료보다 다음 글자의 조합 시작을 먼저 알리므로 참/거짓 하나로는 부족하다.
+    // - 완료 이벤트는 시작 때와 다른 TextComposition 객체로 와서 객체로 짝을 맞출 수도 없다. 그래서 수를 센다.
+    // - TSF 한국어 IME에서는 조합 중인 키도 Key.ImeProcessed로 오지 않으므로 키 종류로 판단하면 안 된다
+    //   (그렇게 했다가 "한ㅡㄹ"이 다시 생겼다). 포커스를 잃으면 0으로 되돌린다.
+    private int _imeCompositionDepth;
+
+    private bool IsImeComposing => _imeCompositionDepth > 0;
 
     private const int MaxDropFileBytes = 5 * 1024 * 1024;
 
@@ -51,6 +58,17 @@ public partial class NoteTextBoxControl : TextBox
         };
         _updateTimer.Tick += OnUpdateTimerTick;
 
+        // '끝에 빈 줄 유지'는 입력이 잠깐 멈춘 뒤에 적용한다 (아래 RequestNewLineAtEnd 설명 참고).
+        _newLineTimer = new(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(300)
+        };
+        _newLineTimer.Tick += (s, e) =>
+        {
+            _newLineTimer.Stop();
+            EnforceNewLineAtEnd();
+        };
+
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
 
@@ -64,7 +82,7 @@ public partial class NoteTextBoxControl : TextBox
         MouseUp += OnMouseUp;
         PreviewKeyDown += OnPreviewKeyDown;
         ContextMenuOpening += OnContextMenuOpening;
-        LostKeyboardFocus += (s, e) => _isImeComposing = false;
+        LostKeyboardFocus += (s, e) => _imeCompositionDepth = 0;
 
         TextCompositionManager.AddPreviewTextInputStartHandler(this, OnPreviewTextInputStart);
         TextCompositionManager.AddPreviewTextInputHandler(this, OnPreviewTextInputCompleted);
@@ -361,6 +379,7 @@ public partial class NoteTextBoxControl : TextBox
 
         _updateTimer?.Stop();
         _updateTimer?.Tick -= OnUpdateTimerTick;
+        _newLineTimer.Stop();
         _updateTimer = null;
 
         _checkCancellationToken?.Cancel();
@@ -621,8 +640,8 @@ public partial class NoteTextBoxControl : TextBox
 
     private void EnforceNewLineAtEnd()
     {
-        // 한글 조합 중에 끝에 줄바꿈을 붙이면 조합이 끊길 수 있다. 조합이 끝나면 다시 호출된다.
-        if (_isImeComposing || !NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
+        // 한글 조합 중에 끝에 줄바꿈을 붙이면 조합이 끊긴다. 조합이 끝나면 RequestNewLineAtEnd로 다시 온다.
+        if (IsImeComposing || !NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
             return;
 
         // Store caret position
@@ -637,13 +656,28 @@ public partial class NoteTextBoxControl : TextBox
         SelectionLength = selectionLength;
     }
 
+    /// <summary>
+    /// 텍스트가 바뀌는 그 순간에 끝에 줄바꿈을 붙이지 않고, 입력이 0.3초 멈춘 뒤에 붙인다.
+    /// 한국어 IME는 새 글자의 조합 텍스트를 먼저 넣고(TextChanged) 조합 시작을 나중에 알리기 때문에,
+    /// TextChanged 안에서 바로 고치면 조합 중 여부를 알 수 없어 조합이 끊겼다 (실제 입력으로 확인: "한글" -> "한ㅡㄹ").
+    /// 입력을 멈춰도 한국어 IME는 마지막 글자를 계속 조합 중으로 두므로, 그때도 조합 중이면 건드리지 않는다.
+    /// </summary>
+    private void RequestNewLineAtEnd()
+    {
+        if (!NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
+            return;
+
+        _newLineTimer.Stop();
+        _newLineTimer.Start();
+    }
+
     private void OnTextChanged(object sender, TextChangedEventArgs e)
     {
         _updateTimer?.Stop();
 
-        EnforceNewLineAtEnd();
+        RequestNewLineAtEnd();
 
-        if (!BackgroundSpellCheck || Text.Length == 0 || _isImeComposing)
+        if (!BackgroundSpellCheck || Text.Length == 0 || IsImeComposing)
             return;
 
         // 예전에는 Text[^1](맨 끝 글자)을 봤는데, '끝에 빈 줄 유지'가 켜져 있으면 맨 끝은 항상 줄바꿈이라
@@ -679,14 +713,18 @@ public partial class NoteTextBoxControl : TextBox
     private void OnPreviewTextInputStart(object sender, TextCompositionEventArgs e)
     {
         // IME 조합 시작. (일반 키 입력은 시작과 완료가 바로 이어서 온다.)
-        _isImeComposing = true;
+        _imeCompositionDepth++;
     }
 
     private void OnPreviewTextInputCompleted(object sender, TextCompositionEventArgs e)
     {
-        _isImeComposing = false;
-        // 조합 중에 미뤄 둔 '끝에 빈 줄 유지'를 조합 결과가 들어간 뒤에 적용한다.
-        Dispatcher.BeginInvoke(DispatcherPriority.Input, EnforceNewLineAtEnd);
+        if (_imeCompositionDepth > 0)
+            _imeCompositionDepth--;
+        if (_imeCompositionDepth > 0)
+            return; // 다음 글자의 조합이 이미 시작됐다.
+
+        // 조합 중에 미뤄 둔 '끝에 빈 줄 유지'를 조합이 끝나고 입력이 멈춘 뒤에 적용한다.
+        RequestNewLineAtEnd();
     }
 
     private void OnPreviewDrop(object sender, DragEventArgs e)
@@ -825,7 +863,7 @@ public partial class NoteTextBoxControl : TextBox
         {
             e.Handled = HandledTabPressed();
         }
-        else if (e.Key == Key.Return && AutoIndent && !_isImeComposing)
+        else if (e.Key == Key.Return && AutoIndent && !IsImeComposing)
         {
             // 커서(또는 선택 영역 시작)가 있는 '실제' 줄의 앞쪽 공백을 새 줄에 이어 붙인다.
             // - 예전에는 화면에 보이는 줄(GetLineText)을 써서, 자동 줄 바꿈으로 꺾인 줄에서는 들여쓰기가 틀렸다.
