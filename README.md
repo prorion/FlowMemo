@@ -42,6 +42,11 @@ FlowMemo는 [63BeetleSmurf](https://github.com/63BeetleSmurf)의 [Pinny Notes](h
 Base64, 괄호, 대소문자, 색상(RGB↔HEX), 날짜·시간, 더미 텍스트, GUID, 해시(MD5/SHA), HTML 엔티티, 들여쓰기, 줄 합치기, JSON 정렬, 목록, 따옴표, 제거, 슬래시, 나누기, 공백 정리, URL 인코딩
 
 
+## 🗺️ 개선 과제
+
+남은 문제, 직접 확인할 항목, 우선순위별 개선 계획은 [docs/IMPROVEMENTS.md](docs/IMPROVEMENTS.md)에 정리했습니다.
+
+
 ## 🔨 빌드
 
 필요한 것: Windows, [.NET 10 SDK](https://dotnet.microsoft.com/download)
