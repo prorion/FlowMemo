@@ -4,6 +4,8 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class RemoveTool : BaseTool, ITool
@@ -24,17 +26,17 @@ public class RemoveTool : BaseTool, ITool
     public RemoveTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Remove",
+            Strings.Tool_Remove,
             [
-                new ToolMenuAction("Spaces", new RelayCommand(() => MenuAction(ToolActions.RemoveSpaces))),
-                new ToolMenuAction("Tabs", new RelayCommand(() => MenuAction(ToolActions.RemoveTabs))),
-                new ToolMenuAction("New Lines", new RelayCommand(() => MenuAction(ToolActions.RemoveNewLines))),
+                new ToolMenuAction(Strings.Tool_Remove_Spaces, new RelayCommand(() => MenuAction(ToolActions.RemoveSpaces))),
+                new ToolMenuAction(Strings.Tool_Remove_Tabs, new RelayCommand(() => MenuAction(ToolActions.RemoveTabs))),
+                new ToolMenuAction(Strings.Tool_Remove_NewLines, new RelayCommand(() => MenuAction(ToolActions.RemoveNewLines))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Forward Slashes (/)", new RelayCommand(() => MenuAction(ToolActions.RemoveForwardSlashes))),
-                new ToolMenuAction("Back Slashes (\\)", new RelayCommand(() => MenuAction(ToolActions.RemoveBackSlashes))),
-                new ToolMenuAction("All Slashes", new RelayCommand(() => MenuAction(ToolActions.RemoveAllSlashes))),
+                new ToolMenuAction(Strings.Tool_Remove_ForwardSlashes, new RelayCommand(() => MenuAction(ToolActions.RemoveForwardSlashes))),
+                new ToolMenuAction(Strings.Tool_Remove_BackSlashes, new RelayCommand(() => MenuAction(ToolActions.RemoveBackSlashes))),
+                new ToolMenuAction(Strings.Tool_Remove_AllSlashes, new RelayCommand(() => MenuAction(ToolActions.RemoveAllSlashes))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Selected", new RelayCommand(() => MenuAction(ToolActions.RemoveSelected)))
+                new ToolMenuAction(Strings.Tool_Remove_Selected, new RelayCommand(() => MenuAction(ToolActions.RemoveSelected)))
             ]
         );
     }

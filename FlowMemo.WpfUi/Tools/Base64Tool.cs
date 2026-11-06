@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class Base64Tool : BaseTool, ITool
@@ -15,10 +17,10 @@ public class Base64Tool : BaseTool, ITool
     public Base64Tool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Base64",
+            Strings.Tool_Base64,
             [
-                new ToolMenuAction("Encode", new RelayCommand(() => MenuAction(ToolActions.Base64Encode))),
-                new ToolMenuAction("Decode", new RelayCommand(() => MenuAction(ToolActions.Base64Decode)))
+                new ToolMenuAction(Strings.Tool_Base64_Encode, new RelayCommand(() => MenuAction(ToolActions.Base64Encode))),
+                new ToolMenuAction(Strings.Tool_Base64_Decode, new RelayCommand(() => MenuAction(ToolActions.Base64Decode)))
             ]
         );
     }

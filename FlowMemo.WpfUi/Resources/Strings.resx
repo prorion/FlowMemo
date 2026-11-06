@@ -1,0 +1,722 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FlowMemo UI 문자열 (기본 언어: 한국어).
+  - XAML: xmlns:res="clr-namespace:FlowMemo.WpfUi.Resources" 후 {x:Static res:Strings.키}
+  - C#:   FlowMemo.WpfUi.Resources.Strings.키
+  - 다른 언어는 같은 키로 Strings.<언어코드>.resx (예: Strings.en.resx)를 추가한다.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App_Name" xml:space="preserve">
+    <value>FlowMemo</value>
+  </data>
+  <data name="Error_Title" xml:space="preserve">
+    <value>FlowMemo 오류</value>
+  </data>
+  <data name="Error_Unexpected" xml:space="preserve">
+    <value>예기치 않은 오류가 발생했습니다.
+
+{0}
+
+오류 기록 파일: {1}</value>
+  </data>
+  <data name="Error_DatabaseNewer" xml:space="preserve">
+    <value>이 메모 데이터는 더 새로운 버전의 FlowMemo에서 만들어졌습니다.
+FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
+
+데이터 위치: {0}</value>
+  </data>
+  <data name="Error_DatabaseOpen" xml:space="preserve">
+    <value>메모 데이터를 열지 못했습니다.
+
+{0}
+
+데이터 위치: {1}</value>
+  </data>
+  <data name="Error_ToolFailed" xml:space="preserve">
+    <value>이 텍스트에는 &apos;{0}&apos; 도구를 적용할 수 없습니다.
+텍스트 형식을 확인해 주세요.</value>
+  </data>
+  <data name="Error_SaveFile" xml:space="preserve">
+    <value>파일을 저장하지 못했습니다.
+
+{0}</value>
+  </data>
+  <data name="Error_OpenFile" xml:space="preserve">
+    <value>파일을 열지 못했습니다.
+
+{0}</value>
+  </data>
+  <data name="Error_FileTooLarge" xml:space="preserve">
+    <value>파일이 너무 큽니다. {0}MB 이하의 텍스트 파일만 넣을 수 있습니다.</value>
+  </data>
+  <data name="Error_NotTextFile" xml:space="preserve">
+    <value>텍스트 파일만 넣을 수 있습니다.</value>
+  </data>
+  <data name="Update_Title" xml:space="preserve">
+    <value>업데이트 알림</value>
+  </data>
+  <data name="Update_Available" xml:space="preserve">
+    <value>새 버전의 FlowMemo가 나왔습니다.
+{0}</value>
+  </data>
+  <data name="Tray_NewNote" xml:space="preserve">
+    <value>새 메모</value>
+  </data>
+  <data name="Tray_Management" xml:space="preserve">
+    <value>메모 관리</value>
+  </data>
+  <data name="Tray_Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Tray_Exit" xml:space="preserve">
+    <value>끝내기</value>
+  </data>
+  <data name="Note_NewNote_ToolTip" xml:space="preserve">
+    <value>새 메모</value>
+  </data>
+  <data name="Note_Pin_ToolTip" xml:space="preserve">
+    <value>항상 위에 고정</value>
+  </data>
+  <data name="Note_Close_ToolTip" xml:space="preserve">
+    <value>닫기</value>
+  </data>
+  <data name="Note_Menu_Save" xml:space="preserve">
+    <value>텍스트 파일로 저장...</value>
+  </data>
+  <data name="Note_Menu_ResetSize" xml:space="preserve">
+    <value>기본 크기로</value>
+  </data>
+  <data name="Note_Menu_Management" xml:space="preserve">
+    <value>메모 관리</value>
+  </data>
+  <data name="Note_Menu_Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Note_SaveDialog_Filter" xml:space="preserve">
+    <value>텍스트 문서 (*.txt)|*.txt|모든 파일 (*.*)|*.*</value>
+  </data>
+  <data name="Colour_Yellow" xml:space="preserve">
+    <value>노랑</value>
+  </data>
+  <data name="Colour_Orange" xml:space="preserve">
+    <value>주황</value>
+  </data>
+  <data name="Colour_Red" xml:space="preserve">
+    <value>빨강</value>
+  </data>
+  <data name="Colour_Pink" xml:space="preserve">
+    <value>분홍</value>
+  </data>
+  <data name="Colour_Purple" xml:space="preserve">
+    <value>보라</value>
+  </data>
+  <data name="Colour_Blue" xml:space="preserve">
+    <value>파랑</value>
+  </data>
+  <data name="Colour_Aqua" xml:space="preserve">
+    <value>청록</value>
+  </data>
+  <data name="Colour_Green" xml:space="preserve">
+    <value>초록</value>
+  </data>
+  <data name="TextMenu_Copy" xml:space="preserve">
+    <value>복사</value>
+  </data>
+  <data name="TextMenu_Cut" xml:space="preserve">
+    <value>잘라내기</value>
+  </data>
+  <data name="TextMenu_Paste" xml:space="preserve">
+    <value>붙여넣기</value>
+  </data>
+  <data name="TextMenu_SelectAll" xml:space="preserve">
+    <value>모두 선택</value>
+  </data>
+  <data name="TextMenu_Clear" xml:space="preserve">
+    <value>모두 지우기</value>
+  </data>
+  <data name="TextMenu_Locked" xml:space="preserve">
+    <value>잠금 (읽기 전용)</value>
+  </data>
+  <data name="TextMenu_Counts" xml:space="preserve">
+    <value>개수 세기</value>
+  </data>
+  <data name="TextMenu_LineCount" xml:space="preserve">
+    <value>줄: {0}</value>
+  </data>
+  <data name="TextMenu_WordCount" xml:space="preserve">
+    <value>단어: {0}</value>
+  </data>
+  <data name="TextMenu_CharCount" xml:space="preserve">
+    <value>글자: {0}</value>
+  </data>
+  <data name="TextMenu_Tools" xml:space="preserve">
+    <value>도구</value>
+  </data>
+  <data name="TextMenu_NoSpellingSuggestions" xml:space="preserve">
+    <value>(추천 단어 없음)</value>
+  </data>
+  <data name="Management_Title" xml:space="preserve">
+    <value>FlowMemo - 메모 관리</value>
+  </data>
+  <data name="Management_NewNote" xml:space="preserve">
+    <value>새 메모</value>
+  </data>
+  <data name="Management_Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Management_OpenNotes" xml:space="preserve">
+    <value>메모 열기</value>
+  </data>
+  <data name="Management_CloseNotes" xml:space="preserve">
+    <value>메모 닫기</value>
+  </data>
+  <data name="Management_DeleteNotes" xml:space="preserve">
+    <value>메모 삭제</value>
+  </data>
+  <data name="Management_DeleteConfirm_Title" xml:space="preserve">
+    <value>메모 삭제</value>
+  </data>
+  <data name="Management_DeleteConfirm_Message" xml:space="preserve">
+    <value>선택한 메모 {0}개를 삭제할까요?
+삭제한 메모는 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>FlowMemo 설정</value>
+  </data>
+  <data name="Settings_Tab_Application" xml:space="preserve">
+    <value>앱</value>
+  </data>
+  <data name="Settings_Tab_Notes" xml:space="preserve">
+    <value>메모</value>
+  </data>
+  <data name="Settings_Tab_Editor" xml:space="preserve">
+    <value>편집기</value>
+  </data>
+  <data name="Settings_Tab_Tools" xml:space="preserve">
+    <value>도구</value>
+  </data>
+  <data name="Settings_Group_General" xml:space="preserve">
+    <value>일반</value>
+  </data>
+  <data name="Settings_Group_Theme" xml:space="preserve">
+    <value>테마</value>
+  </data>
+  <data name="Settings_Group_Transparency" xml:space="preserve">
+    <value>투명도</value>
+  </data>
+  <data name="Settings_Group_Fonts" xml:space="preserve">
+    <value>글꼴</value>
+  </data>
+  <data name="Settings_Group_Indentation" xml:space="preserve">
+    <value>들여쓰기</value>
+  </data>
+  <data name="Settings_Group_CopyPaste" xml:space="preserve">
+    <value>복사 및 붙여넣기</value>
+  </data>
+  <data name="Settings_StartupBehaviour" xml:space="preserve">
+    <value>시작할 때</value>
+  </data>
+  <data name="Settings_NewInstanceBehaviour" xml:space="preserve">
+    <value>실행 중에 다시 실행하면</value>
+  </data>
+  <data name="Settings_ShowTrayIcon" xml:space="preserve">
+    <value>알림 영역에 아이콘 표시</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>시작할 때 업데이트 확인</value>
+  </data>
+  <data name="Settings_DefaultSize" xml:space="preserve">
+    <value>기본 크기 (너비 × 높이)</value>
+  </data>
+  <data name="Settings_StartupPosition" xml:space="preserve">
+    <value>새 메모 위치</value>
+  </data>
+  <data name="Settings_PinnedByDefault" xml:space="preserve">
+    <value>새 메모를 항상 위에 고정</value>
+  </data>
+  <data name="Settings_AllowMinimize" xml:space="preserve">
+    <value>메모 최소화 허용</value>
+  </data>
+  <data name="Settings_VisibilityMode" xml:space="preserve">
+    <value>작업 표시줄 표시</value>
+  </data>
+  <data name="Settings_HideTitleBar" xml:space="preserve">
+    <value>제목 표시줄 자동 숨기기</value>
+  </data>
+  <data name="Settings_CycleColours" xml:space="preserve">
+    <value>새 메모마다 다른 색 쓰기</value>
+  </data>
+  <data name="Settings_ColourMode" xml:space="preserve">
+    <value>색 모드</value>
+  </data>
+  <data name="Settings_TransparencyNotice" xml:space="preserve">
+    <value>투명도를 켜면 성능이 조금 떨어질 수 있습니다. 주로 처음 시작할 때 느려집니다.</value>
+  </data>
+  <data name="Settings_TransparencyMode" xml:space="preserve">
+    <value>적용 대상</value>
+  </data>
+  <data name="Settings_OpaqueWhenFocused" xml:space="preserve">
+    <value>선택한 메모는 불투명하게</value>
+  </data>
+  <data name="Settings_OpaqueValue" xml:space="preserve">
+    <value>불투명 상태 값</value>
+  </data>
+  <data name="Settings_TransparentValue" xml:space="preserve">
+    <value>투명 상태 값</value>
+  </data>
+  <data name="Settings_SpellCheck" xml:space="preserve">
+    <value>맞춤법 검사 (Windows가 지원하는 언어만)</value>
+  </data>
+  <data name="Settings_NewLineAtEnd" xml:space="preserve">
+    <value>끝에 빈 줄 유지</value>
+  </data>
+  <data name="Settings_KeepNewLineVisible" xml:space="preserve">
+    <value>끝의 빈 줄이 보이게 스크롤</value>
+  </data>
+  <data name="Settings_WrapText" xml:space="preserve">
+    <value>자동 줄 바꿈</value>
+  </data>
+  <data name="Settings_StandardFont" xml:space="preserve">
+    <value>기본 글꼴</value>
+  </data>
+  <data name="Settings_MonoFont" xml:space="preserve">
+    <value>고정폭 글꼴</value>
+  </data>
+  <data name="Settings_UseMonoFont" xml:space="preserve">
+    <value>고정폭 글꼴 사용</value>
+  </data>
+  <data name="Settings_AutoIndent" xml:space="preserve">
+    <value>자동 들여쓰기</value>
+  </data>
+  <data name="Settings_UseSpacesForTab" xml:space="preserve">
+    <value>탭 대신 공백 사용</value>
+  </data>
+  <data name="Settings_ConvertIndentationOnPaste" xml:space="preserve">
+    <value>붙여넣을 때 들여쓰기 변환</value>
+  </data>
+  <data name="Settings_TabWidth" xml:space="preserve">
+    <value>탭 너비</value>
+  </data>
+  <data name="Settings_TrimText" xml:space="preserve">
+    <value>앞뒤 공백 제거</value>
+  </data>
+  <data name="Settings_CopyAction" xml:space="preserve">
+    <value>복사 (Ctrl+C)</value>
+  </data>
+  <data name="Settings_CopyAltAction" xml:space="preserve">
+    <value>Shift 복사 (Ctrl+Shift+C)</value>
+  </data>
+  <data name="Settings_CopyFallbackAction" xml:space="preserve">
+    <value>선택 영역이 없을 때 복사</value>
+  </data>
+  <data name="Settings_CopyAltFallbackAction" xml:space="preserve">
+    <value>선택 영역이 없을 때 Shift 복사</value>
+  </data>
+  <data name="Settings_AutoCopy" xml:space="preserve">
+    <value>선택하면 자동 복사</value>
+  </data>
+  <data name="Settings_PasteAction" xml:space="preserve">
+    <value>붙여넣기 (Ctrl+V)</value>
+  </data>
+  <data name="Settings_PasteAltAction" xml:space="preserve">
+    <value>Shift 붙여넣기 (Ctrl+Shift+V)</value>
+  </data>
+  <data name="Settings_MiddleClickPaste" xml:space="preserve">
+    <value>마우스 가운데 버튼으로 붙여넣기</value>
+  </data>
+  <data name="Option_Startup_RestoreOpenNotes" xml:space="preserve">
+    <value>열려 있던 메모 다시 열기</value>
+  </data>
+  <data name="Option_Startup_CreateNewNote" xml:space="preserve">
+    <value>새 메모 만들기</value>
+  </data>
+  <data name="Option_Startup_ShowManagement" xml:space="preserve">
+    <value>메모 관리 창 열기</value>
+  </data>
+  <data name="Option_Position_TopLeft" xml:space="preserve">
+    <value>왼쪽 위</value>
+  </data>
+  <data name="Option_Position_TopCentre" xml:space="preserve">
+    <value>가운데 위</value>
+  </data>
+  <data name="Option_Position_TopRight" xml:space="preserve">
+    <value>오른쪽 위</value>
+  </data>
+  <data name="Option_Position_MiddleLeft" xml:space="preserve">
+    <value>왼쪽 가운데</value>
+  </data>
+  <data name="Option_Position_MiddleCentre" xml:space="preserve">
+    <value>정가운데</value>
+  </data>
+  <data name="Option_Position_MiddleRight" xml:space="preserve">
+    <value>오른쪽 가운데</value>
+  </data>
+  <data name="Option_Position_BottomLeft" xml:space="preserve">
+    <value>왼쪽 아래</value>
+  </data>
+  <data name="Option_Position_BottomCentre" xml:space="preserve">
+    <value>가운데 아래</value>
+  </data>
+  <data name="Option_Position_BottomRight" xml:space="preserve">
+    <value>오른쪽 아래</value>
+  </data>
+  <data name="Option_Minimize_Allow" xml:space="preserve">
+    <value>허용</value>
+  </data>
+  <data name="Option_Minimize_Prevent" xml:space="preserve">
+    <value>허용 안 함</value>
+  </data>
+  <data name="Option_Minimize_PreventIfPinned" xml:space="preserve">
+    <value>고정하지 않은 메모만 허용</value>
+  </data>
+  <data name="Option_Visibility_Show" xml:space="preserve">
+    <value>작업 표시줄에 표시</value>
+  </data>
+  <data name="Option_Visibility_HideTaskbar" xml:space="preserve">
+    <value>작업 표시줄에서 숨김</value>
+  </data>
+  <data name="Option_Visibility_HideAll" xml:space="preserve">
+    <value>작업 표시줄과 Alt+Tab에서 숨김</value>
+  </data>
+  <data name="Option_Colour_Light" xml:space="preserve">
+    <value>밝게</value>
+  </data>
+  <data name="Option_Colour_Dark" xml:space="preserve">
+    <value>어둡게</value>
+  </data>
+  <data name="Option_Colour_System" xml:space="preserve">
+    <value>Windows 설정 따르기</value>
+  </data>
+  <data name="Option_Transparency_Disabled" xml:space="preserve">
+    <value>사용 안 함</value>
+  </data>
+  <data name="Option_Transparency_Enabled" xml:space="preserve">
+    <value>모든 메모</value>
+  </data>
+  <data name="Option_Transparency_WhenPinned" xml:space="preserve">
+    <value>고정한 메모만</value>
+  </data>
+  <data name="Option_None" xml:space="preserve">
+    <value>안 함</value>
+  </data>
+  <data name="Option_Copy_Selected" xml:space="preserve">
+    <value>선택 영역 복사</value>
+  </data>
+  <data name="Option_Copy_Line" xml:space="preserve">
+    <value>현재 줄 복사</value>
+  </data>
+  <data name="Option_Copy_All" xml:space="preserve">
+    <value>전체 복사</value>
+  </data>
+  <data name="Option_CopyFallback_Note" xml:space="preserve">
+    <value>메모 전체 복사</value>
+  </data>
+  <data name="Option_Paste_Paste" xml:space="preserve">
+    <value>붙여넣기</value>
+  </data>
+  <data name="Option_Paste_ReplaceAll" xml:space="preserve">
+    <value>전체를 바꿔서 붙여넣기</value>
+  </data>
+  <data name="Option_Paste_AtEnd" xml:space="preserve">
+    <value>맨 끝에 붙여넣기</value>
+  </data>
+  <data name="Option_Tool_Disabled" xml:space="preserve">
+    <value>사용 안 함</value>
+  </data>
+  <data name="Option_Tool_Enabled" xml:space="preserve">
+    <value>도구 메뉴에 표시</value>
+  </data>
+  <data name="Option_Tool_Favourite" xml:space="preserve">
+    <value>바로 표시 (즐겨찾기)</value>
+  </data>
+  <data name="Tool_Base64" xml:space="preserve">
+    <value>Base64</value>
+  </data>
+  <data name="Tool_Base64_Encode" xml:space="preserve">
+    <value>인코딩</value>
+  </data>
+  <data name="Tool_Base64_Decode" xml:space="preserve">
+    <value>디코딩</value>
+  </data>
+  <data name="Tool_Bracket" xml:space="preserve">
+    <value>괄호</value>
+  </data>
+  <data name="Tool_Bracket_Parentheses" xml:space="preserve">
+    <value>소괄호로 감싸기 ( )</value>
+  </data>
+  <data name="Tool_Bracket_Curly" xml:space="preserve">
+    <value>중괄호로 감싸기 { }</value>
+  </data>
+  <data name="Tool_Bracket_Square" xml:space="preserve">
+    <value>대괄호로 감싸기 [ ]</value>
+  </data>
+  <data name="Tool_Bracket_TrimOnce" xml:space="preserve">
+    <value>바깥 괄호 한 겹 제거</value>
+  </data>
+  <data name="Tool_Bracket_TrimAll" xml:space="preserve">
+    <value>바깥 괄호 모두 제거</value>
+  </data>
+  <data name="Tool_Case" xml:space="preserve">
+    <value>대소문자</value>
+  </data>
+  <data name="Tool_Case_Lower" xml:space="preserve">
+    <value>소문자로</value>
+  </data>
+  <data name="Tool_Case_Upper" xml:space="preserve">
+    <value>대문자로</value>
+  </data>
+  <data name="Tool_Case_Title" xml:space="preserve">
+    <value>단어 첫 글자만 대문자로</value>
+  </data>
+  <data name="Tool_Colour" xml:space="preserve">
+    <value>색상 코드</value>
+  </data>
+  <data name="Tool_Colour_RgbToHex" xml:space="preserve">
+    <value>RGB → HEX</value>
+  </data>
+  <data name="Tool_Colour_HexToRgb" xml:space="preserve">
+    <value>HEX → RGB</value>
+  </data>
+  <data name="Tool_DateTime" xml:space="preserve">
+    <value>날짜/시간</value>
+  </data>
+  <data name="Tool_DateTime_Sortable" xml:space="preserve">
+    <value>날짜·시간 (ISO 8601)</value>
+  </data>
+  <data name="Tool_DateTime_WeekNumber" xml:space="preserve">
+    <value>주 번호 (ISO)</value>
+  </data>
+  <data name="Tool_Gibberish" xml:space="preserve">
+    <value>더미 텍스트</value>
+  </data>
+  <data name="Tool_Gibberish_Word" xml:space="preserve">
+    <value>단어</value>
+  </data>
+  <data name="Tool_Gibberish_Title" xml:space="preserve">
+    <value>제목</value>
+  </data>
+  <data name="Tool_Gibberish_Sentence" xml:space="preserve">
+    <value>문장</value>
+  </data>
+  <data name="Tool_Gibberish_Paragraph" xml:space="preserve">
+    <value>문단</value>
+  </data>
+  <data name="Tool_Gibberish_Article" xml:space="preserve">
+    <value>글</value>
+  </data>
+  <data name="Tool_Gibberish_Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="Tool_Guid" xml:space="preserve">
+    <value>GUID</value>
+  </data>
+  <data name="Tool_Guid_V4" xml:space="preserve">
+    <value>버전 4 (무작위)</value>
+  </data>
+  <data name="Tool_Guid_V7" xml:space="preserve">
+    <value>버전 7 (시간순)</value>
+  </data>
+  <data name="Tool_Hash" xml:space="preserve">
+    <value>해시</value>
+  </data>
+  <data name="Tool_HtmlEntity" xml:space="preserve">
+    <value>HTML 엔티티</value>
+  </data>
+  <data name="Tool_HtmlEntity_Encode" xml:space="preserve">
+    <value>인코딩</value>
+  </data>
+  <data name="Tool_HtmlEntity_Decode" xml:space="preserve">
+    <value>디코딩</value>
+  </data>
+  <data name="Tool_Indent" xml:space="preserve">
+    <value>들여쓰기</value>
+  </data>
+  <data name="Tool_Indent_2Spaces" xml:space="preserve">
+    <value>공백 2칸</value>
+  </data>
+  <data name="Tool_Indent_4Spaces" xml:space="preserve">
+    <value>공백 4칸</value>
+  </data>
+  <data name="Tool_Indent_Tab" xml:space="preserve">
+    <value>탭</value>
+  </data>
+  <data name="Tool_Join" xml:space="preserve">
+    <value>줄 합치기</value>
+  </data>
+  <data name="Tool_Join_Comma" xml:space="preserve">
+    <value>쉼표로 합치기</value>
+  </data>
+  <data name="Tool_Join_Space" xml:space="preserve">
+    <value>공백으로 합치기</value>
+  </data>
+  <data name="Tool_Join_Tab" xml:space="preserve">
+    <value>탭으로 합치기</value>
+  </data>
+  <data name="Tool_Json" xml:space="preserve">
+    <value>JSON</value>
+  </data>
+  <data name="Tool_Json_Prettify" xml:space="preserve">
+    <value>보기 좋게 정렬</value>
+  </data>
+  <data name="Tool_List" xml:space="preserve">
+    <value>목록</value>
+  </data>
+  <data name="Tool_List_Enumerate" xml:space="preserve">
+    <value>번호 매기기</value>
+  </data>
+  <data name="Tool_List_Dash" xml:space="preserve">
+    <value>글머리 기호 (-)</value>
+  </data>
+  <data name="Tool_List_Remove" xml:space="preserve">
+    <value>목록 기호 지우기</value>
+  </data>
+  <data name="Tool_Quote" xml:space="preserve">
+    <value>따옴표</value>
+  </data>
+  <data name="Tool_Quote_Double" xml:space="preserve">
+    <value>큰따옴표로 감싸기</value>
+  </data>
+  <data name="Tool_Quote_Single" xml:space="preserve">
+    <value>작은따옴표로 감싸기</value>
+  </data>
+  <data name="Tool_Quote_Backtick" xml:space="preserve">
+    <value>백틱으로 감싸기</value>
+  </data>
+  <data name="Tool_Quote_Trim" xml:space="preserve">
+    <value>바깥 따옴표 제거</value>
+  </data>
+  <data name="Tool_Remove" xml:space="preserve">
+    <value>문자 지우기</value>
+  </data>
+  <data name="Tool_Remove_Spaces" xml:space="preserve">
+    <value>공백</value>
+  </data>
+  <data name="Tool_Remove_Tabs" xml:space="preserve">
+    <value>탭</value>
+  </data>
+  <data name="Tool_Remove_NewLines" xml:space="preserve">
+    <value>줄 바꿈</value>
+  </data>
+  <data name="Tool_Remove_ForwardSlashes" xml:space="preserve">
+    <value>슬래시 (/)</value>
+  </data>
+  <data name="Tool_Remove_BackSlashes" xml:space="preserve">
+    <value>역슬래시 (\)</value>
+  </data>
+  <data name="Tool_Remove_AllSlashes" xml:space="preserve">
+    <value>모든 슬래시</value>
+  </data>
+  <data name="Tool_Remove_Selected" xml:space="preserve">
+    <value>선택한 텍스트 (메모 전체에서)</value>
+  </data>
+  <data name="Tool_Slash" xml:space="preserve">
+    <value>슬래시</value>
+  </data>
+  <data name="Tool_Slash_AllForward" xml:space="preserve">
+    <value>모두 슬래시로 (/)</value>
+  </data>
+  <data name="Tool_Slash_AllBack" xml:space="preserve">
+    <value>모두 역슬래시로 (\)</value>
+  </data>
+  <data name="Tool_Slash_Swap" xml:space="preserve">
+    <value>서로 바꾸기</value>
+  </data>
+  <data name="Tool_Sort" xml:space="preserve">
+    <value>정렬</value>
+  </data>
+  <data name="Tool_Sort_Ascending" xml:space="preserve">
+    <value>오름차순</value>
+  </data>
+  <data name="Tool_Sort_Descending" xml:space="preserve">
+    <value>내림차순</value>
+  </data>
+  <data name="Tool_Split" xml:space="preserve">
+    <value>줄 나누기</value>
+  </data>
+  <data name="Tool_Split_Comma" xml:space="preserve">
+    <value>쉼표에서 나누기</value>
+  </data>
+  <data name="Tool_Split_Space" xml:space="preserve">
+    <value>공백에서 나누기</value>
+  </data>
+  <data name="Tool_Split_Tab" xml:space="preserve">
+    <value>탭에서 나누기</value>
+  </data>
+  <data name="Tool_Split_Selected" xml:space="preserve">
+    <value>선택한 텍스트에서 나누기</value>
+  </data>
+  <data name="Tool_Trim" xml:space="preserve">
+    <value>공백 정리</value>
+  </data>
+  <data name="Tool_Trim_Start" xml:space="preserve">
+    <value>줄 앞 공백</value>
+  </data>
+  <data name="Tool_Trim_End" xml:space="preserve">
+    <value>줄 뒤 공백</value>
+  </data>
+  <data name="Tool_Trim_Both" xml:space="preserve">
+    <value>줄 앞뒤 공백</value>
+  </data>
+  <data name="Tool_Trim_EmptyLines" xml:space="preserve">
+    <value>빈 줄 지우기</value>
+  </data>
+  <data name="Tool_Url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="Tool_Url_Encode" xml:space="preserve">
+    <value>인코딩</value>
+  </data>
+  <data name="Tool_Url_Decode" xml:space="preserve">
+    <value>디코딩</value>
+  </data>
+  <data name="Note_NewNote_ToolTipShortcut" xml:space="preserve">
+    <value>새 메모 (Ctrl+N)</value>
+  </data>
+  <data name="Note_More_Name" xml:space="preserve">
+    <value>더 보기</value>
+  </data>
+  <data name="Note_More_ToolTip" xml:space="preserve">
+    <value>더 보기 (저장 · 색 · 메모 관리 · 설정)</value>
+  </data>
+  <data name="Management_Hint" xml:space="preserve">
+    <value>더블클릭 또는 Enter: 열기   ·   Delete: 삭제   ·   마우스 오른쪽 버튼: 더 많은 작업</value>
+  </data>
+  <data name="Management_Empty" xml:space="preserve">
+    <value>메모가 없습니다.
+위의 [새 메모]를 눌러 시작하세요.</value>
+  </data>
+  <data name="Management_NoteOpen" xml:space="preserve">
+    <value>열려 있는 메모</value>
+  </data>
+  <data name="Management_NoteClosed" xml:space="preserve">
+    <value>닫힌 메모 (더블클릭하면 열립니다)</value>
+  </data>
+  <data name="Settings_AutoSaveNotice" xml:space="preserve">
+    <value>설정을 바꾸면 바로 적용되고 저장됩니다.</value>
+  </data>
+  <data name="Settings_Close" xml:space="preserve">
+    <value>닫기</value>
+  </data>
+  <data name="Settings_Group_TextTools" xml:space="preserve">
+    <value>텍스트 도구</value>
+  </data>
+  <data name="Settings_ToolsNotice" xml:space="preserve">
+    <value>메모에서 마우스 오른쪽 버튼을 누르면 나오는 도구입니다.
+&apos;바로 표시&apos;는 메뉴 아래쪽에 바로 나오고, &apos;도구 메뉴에 표시&apos;는 [도구] 하위 메뉴 안에 나옵니다.</value>
+  </data>
+  <data name="Management_OpenBadge" xml:space="preserve">
+    <value>● 열림</value>
+  </data>
+</root>

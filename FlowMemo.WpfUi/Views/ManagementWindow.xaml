@@ -5,10 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FlowMemo.WpfUi.Views"
         xmlns:vm="clr-namespace:FlowMemo.WpfUi.ViewModels"
+        xmlns:res="clr-namespace:FlowMemo.WpfUi.Resources"
         mc:Ignorable="d"
-        Title="FlowMemo"
-        Width="600"
-        Height="400"
+        Title="{x:Static res:Strings.Management_Title}"
+        Width="620"
+        Height="440"
+        MinWidth="360"
+        MinHeight="260"
+        WindowStartupLocation="CenterScreen"
 
         d:DataContext="{d:DesignInstance Type=vm:ManagementViewModel}">
 
@@ -16,61 +20,42 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
+        <!-- 툴바: 아이콘만 있으면 뜻을 알기 어려워 글자를 함께 둔다 -->
         <ToolBar Grid.Row="0" ToolBarTray.IsLocked="True">
-            <ToolBar.Resources>
-                <Style x:Key="ToolBarButtonStyle" TargetType="Button">
-                    <Setter Property="Width" Value="32"/>
-                    <Setter Property="Height" Value="32"/>
-                    <Setter Property="Padding" Value="0"/>
-                    <Setter Property="Focusable" Value="False"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Opacity" Value="0.6"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Opacity" Value="1.0"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </ToolBar.Resources>
 
             <Button x:Name="NewNoteButton"
-                    ToolTip="New note"
+                    ToolTip="{x:Static res:Strings.Management_NewNote}"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_NewNote}"
                     Command="{Binding NewNoteCommand}"
-                    Style="{StaticResource ToolBarButtonStyle}">
-                <Button.Template>
-                    <ControlTemplate>
-                        <Canvas>
-                            <Rectangle Width="32" Height="32" Fill="Transparent" />
-                            <Path Data="M 4,4 v 24 h 24 V 4 Z M 4, 10 h 24"
-                                  Stroke="{DynamicResource TextFillColorSecondaryBrush}"
-                                  StrokeThickness="2"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  d:Stroke="#464646">
-                            </Path>
-                        </Canvas>
-                    </ControlTemplate>
-                </Button.Template>
+                    Padding="8,4">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="M 8,2 V 14 M 2,8 H 14"
+                          Width="16" Height="16"
+                          Stroke="{DynamicResource TextFillColorPrimaryBrush}"
+                          StrokeThickness="2"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Static res:Strings.Management_NewNote}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
             </Button>
 
             <Button x:Name="SettingsButton"
-                    ToolTip="Settings"
+                    ToolTip="{x:Static res:Strings.Management_Settings}"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_Settings}"
                     Command="{Binding OpenSettingsCommand}"
-                    Style="{StaticResource ToolBarButtonStyle}">
-                <Button.Template>
-                    <ControlTemplate>
-                        <Canvas>
-                            <Rectangle Width="32" Height="32" Fill="Transparent" />
-                            <Path Data="M 4,8 h 24 M 8, 4 V 12 M 4,16 h 24 M 24, 12 V 20 M 4,24 h 24 M 16, 20 V 28"
-                                  Stroke="{DynamicResource TextFillColorSecondaryBrush}"
-                                  StrokeThickness="2"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                  d:Stroke="#464646">
-                            </Path>
-                        </Canvas>
-                    </ControlTemplate>
-                </Button.Template>
+                    Padding="8,4">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="M 2,4 H 14 M 5,2 V 6 M 2,8 H 14 M 11,6 V 10 M 2,12 H 14 M 7,10 V 14"
+                          Width="16" Height="16"
+                          Stroke="{DynamicResource TextFillColorPrimaryBrush}"
+                          StrokeThickness="1.5"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Static res:Strings.Management_Settings}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
             </Button>
 
         </ToolBar>
@@ -82,44 +67,84 @@
                   SelectionMode="Extended"
                   ItemsSource="{Binding NotePreviews}">
 
+            <ListView.InputBindings>
+                <KeyBinding Key="Delete" Command="{Binding DeleteNotesCommand}" />
+                <KeyBinding Key="Return" Command="{Binding OpenNotesCommand}" />
+            </ListView.InputBindings>
+
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <Border Width="125"
-                            Height="125"
-                            Margin="5"
-                            Padding="0,20,0,0"
+                    <Grid Width="125" Height="125" Margin="5">
+                    <Border Padding="0,20,0,0"
                             Background="{Binding TitleBrush}"
                             BorderBrush="{Binding BorderBrush}"
                             BorderThickness="1">
+                        <!-- 열린 메모에는 '● 열림' 표시, 닫힌 메모는 살짝만 흐리게 (많이 흐리면 어두운 테마에서 탁해 보인다) -->
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Opacity" Value="1" />
+                                <Setter Property="ToolTip" Value="{x:Static res:Strings.Management_NoteOpen}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOpen}" Value="False">
+                                        <Setter Property="Opacity" Value="0.85" />
+                                        <Setter Property="ToolTip" Value="{x:Static res:Strings.Management_NoteClosed}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <TextBlock Text="{Binding ContentPreview}"
                                    FontSize="12"
                                    TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
                                    Padding="5,2,5,2"
                                    Background="{Binding BackgroundBrush}"
                                    Foreground="{Binding TextBrush}" />
                     </Border>
+                    <TextBlock Text="{x:Static res:Strings.Management_OpenBadge}"
+                               FontSize="10"
+                               Margin="6,3,0,0"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Top"
+                               IsHitTestVisible="False"
+                               Foreground="{Binding TextBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsOpen}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
-            
+
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="IsSelected"
                             Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="AutomationProperties.Name"
+                            Value="{Binding ContentPreview}" />
                 </Style>
             </ListView.ItemContainerStyle>
 
             <ListView.ContextMenu>
                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
                                                    RelativeSource={RelativeSource Self}}">
-                    <MenuItem Header="New note"
+                    <MenuItem Header="{x:Static res:Strings.Management_NewNote}"
                               Command="{Binding NewNoteCommand}" />
                     <Separator />
-                    <MenuItem Header="Open note(s)"
+                    <MenuItem Header="{x:Static res:Strings.Management_OpenNotes}"
+                              InputGestureText="Enter"
                               Command="{Binding OpenNotesCommand}" />
-                    <MenuItem Header="Close note(s)"
+                    <MenuItem Header="{x:Static res:Strings.Management_CloseNotes}"
                               Command="{Binding CloseNotesCommand}" />
                     <Separator />
-                    <MenuItem Header="Delete note"
+                    <MenuItem Header="{x:Static res:Strings.Management_DeleteNotes}"
+                              InputGestureText="Delete"
                               Command="{Binding DeleteNotesCommand}" />
                 </ContextMenu>
             </ListView.ContextMenu>
@@ -131,6 +156,35 @@
             </ListView.ItemsPanel>
 
         </ListView>
+
+        <!-- 메모가 하나도 없을 때 -->
+        <TextBlock Grid.Row="1"
+                   Text="{x:Static res:Strings.Management_Empty}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   FontSize="14"
+                   IsHitTestVisible="False"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding NotePreviews.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <!-- 조작 안내 -->
+        <TextBlock Grid.Row="2"
+                   Margin="12,2,12,8"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Text="{x:Static res:Strings.Management_Hint}" />
 
     </Grid>
 

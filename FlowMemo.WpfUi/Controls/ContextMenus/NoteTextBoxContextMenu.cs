@@ -1,6 +1,8 @@
 ﻿using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls.BackgroundSpellCheck;
+using FlowMemo.WpfUi.Helpers;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Tools;
 using System.Windows;
 using System.Windows.Controls;
@@ -61,37 +63,37 @@ public class NoteTextBoxContextMenu : ContextMenu
 
         _copyMenuItem = new()
         {
-            Header = "Copy",
+            Header = Strings.TextMenu_Copy,
             Command = _noteTextBox.CopyCommand,
             InputGestureText = "Ctrl+C"
         };
         _cutMenuItem = new()
         {
-            Header = "Cut",
+            Header = Strings.TextMenu_Cut,
             Command = _noteTextBox.CutCommand,
             InputGestureText = "Ctrl+X"
         };
         _pasteMenuItem = new()
         {
-            Header = "Paste",
+            Header = Strings.TextMenu_Paste,
             Command = _noteTextBox.PasteCommand,
             InputGestureText = "Ctrl+V"
         };
 
         _selectAllMenuItem = new()
         {
-            Header = "Select All",
+            Header = Strings.TextMenu_SelectAll,
             Command = new RelayCommand(_noteTextBox.SelectAll)
         };
         _clearMenuItem = new()
         {
-            Header = "Clear",
+            Header = Strings.TextMenu_Clear,
             Command = _noteTextBox.ClearCommand
         };
 
         _lockedMenuItem = new()
         {
-            Header = "Locked",
+            Header = Strings.TextMenu_Locked,
             IsCheckable = true,
             Command = _noteTextBox.SetReadOnlyCommand,
             CommandParameter = true // Will bind IsChecked to this below
@@ -106,7 +108,7 @@ public class NoteTextBoxContextMenu : ContextMenu
 
         _countsMenuItem = new()
         {
-            Header = "Counts"
+            Header = Strings.TextMenu_Counts
         };
         _lineCountMenuItem = new()
         {
@@ -123,8 +125,11 @@ public class NoteTextBoxContextMenu : ContextMenu
 
         _toolsMenuItem = new()
         {
-            Header = "Tools"
+            Header = Strings.TextMenu_Tools
         };
+
+        MenuHelper.AlignSubmenuHeader(_countsMenuItem);
+        MenuHelper.AlignSubmenuHeader(_toolsMenuItem);
 
         Populate();
     }
@@ -137,14 +142,14 @@ public class NoteTextBoxContextMenu : ContextMenu
 
         _copyMenuItem.IsEnabled = _noteTextBox.HasSelectedText;
         _cutMenuItem.IsEnabled = _noteTextBox.HasSelectedText;
-        _pasteMenuItem.IsEnabled = Clipboard.ContainsText();
+        _pasteMenuItem.IsEnabled = ClipboardHelper.ContainsText();
 
         _selectAllMenuItem.IsEnabled = hasText;
         _clearMenuItem.IsEnabled = hasText;
 
-        _lineCountMenuItem.Header = $"Lines: {_noteTextBox.LineCount()}";
-        _wordCountMenuItem.Header = $"Words: {_noteTextBox.WordCount()}";
-        _charCountMenuItem.Header = $"Chars: {_noteTextBox.CharCount()}";
+        _lineCountMenuItem.Header = string.Format(Strings.TextMenu_LineCount, _noteTextBox.LineCount());
+        _wordCountMenuItem.Header = string.Format(Strings.TextMenu_WordCount, _noteTextBox.WordCount());
+        _charCountMenuItem.Header = string.Format(Strings.TextMenu_CharCount, _noteTextBox.CharCount());
 
         UpdateToolContextMenus();
     }
@@ -188,7 +193,7 @@ public class NoteTextBoxContextMenu : ContextMenu
                 _spellingErrorMenuItems.Add(
                     new MenuItem()
                     {
-                        Header = "(no spelling suggestions)",
+                        Header = Strings.TextMenu_NoSpellingSuggestions,
                         IsEnabled = false
                     }
                 );

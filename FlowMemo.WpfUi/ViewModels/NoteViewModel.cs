@@ -116,13 +116,21 @@ public class NoteViewModel : BaseViewModel
         MessengerService.Publish<NoteActionMessage>(new(NoteAction.Updated, Note.ToDto()));
     }
 
+    /// <summary>창이 닫힐 때 호출한다. 앱 전체에서 살아 있는 설정 모델에 대한 구독을 푼다.</summary>
+    public void Detach()
+    {
+        _saveTimer.Stop();
+        NoteSettings.PropertyChanged -= OnNoteSettingsChanged;
+    }
+
     public async Task<bool> CloseNote()
     {
         _saveTimer.Stop();
 
         MessengerService.Publish<NoteActionMessage>(new(NoteAction.Closed, Note.ToDto()));
 
-        if (string.IsNullOrEmpty(Note.Content))
+        // 공백·줄바꿈만 남은 메모도 빈 메모로 보고 지운다 ('끝에 빈 줄 유지' 때문에 줄바꿈만 남는 경우가 있다).
+        if (string.IsNullOrWhiteSpace(Note.Content))
         {
             // Delete note if empty, TO DO: Add setting for this behaviour
             await _noteRepository.Delete(Note.Id);
@@ -158,6 +166,7 @@ public class NoteViewModel : BaseViewModel
     {
         Note = new(await _noteRepository.GetById((int)noteId), NoteSettings);
 
+        EnsureSavedPositionIsOnScreen();
         UpdateBrushes();
         UpdateOpacity();
 
@@ -166,9 +175,45 @@ public class NoteViewModel : BaseViewModel
         await SaveNote();
     }
 
+    private DateTime _lastSaveErrorReport = DateTime.MinValue;
+
     private async void OnSaveTimerTick(object? sender, EventArgs e)
     {
-        await SaveNote();
+        try
+        {
+            await SaveNote();
+        }
+        catch (Exception ex)
+        {
+            // 5초마다 실패해도 대화 상자가 계속 뜨지 않게 1분에 한 번만 알린다.
+            if (DateTime.Now - _lastSaveErrorReport > TimeSpan.FromMinutes(1))
+            {
+                _lastSaveErrorReport = DateTime.Now;
+                ErrorReporter.Report(ex, "SaveNote (timer)");
+            }
+            else
+            {
+                ErrorReporter.Log(ex, "SaveNote (timer)");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 모니터를 떼어내거나 배치·배율을 바꾸면 저장된 위치가 화면 밖일 수 있다.
+    /// 창을 만들기 전에 확인해서, 화면 밖이면 주 모니터 왼쪽 위로 옮긴다.
+    /// </summary>
+    private void EnsureSavedPositionIsOnScreen()
+    {
+        Rect titleArea = new(Note.X, Note.Y, Math.Max(Note.Width, 50), 30);
+        if (ScreenHelper.IsDipRectOnAnyScreen(titleArea))
+            return;
+
+        const int screenMargin = 78;
+        Rect workArea = ScreenHelper.GetPrimaryScreenBounds();
+        Note.X = workArea.Left + screenMargin;
+        Note.Y = workArea.Top + screenMargin;
+        Note.GravityX = 1;
+        Note.GravityY = 1;
     }
 
     private void InitNotePosition(NoteModel? parent = null, nint? managementWindowHandle = null)

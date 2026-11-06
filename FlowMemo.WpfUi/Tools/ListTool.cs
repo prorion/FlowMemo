@@ -2,9 +2,13 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using System.Text.RegularExpressions;
+
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
-public class ListTool : BaseTool, ITool
+public partial class ListTool : BaseTool, ITool
 {
     private enum ToolActions
     {
@@ -16,16 +20,20 @@ public class ListTool : BaseTool, ITool
     public ListTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "List",
+            Strings.Tool_List,
             [
-                new ToolMenuAction("Enumerate", new RelayCommand(() => MenuAction(ToolActions.ListEnumerate))),
-                new ToolMenuAction("Dash", new RelayCommand(() => MenuAction(ToolActions.ListDash))),
-                new ToolMenuAction("Remove", new RelayCommand(() => MenuAction(ToolActions.ListRemove)))
+                new ToolMenuAction(Strings.Tool_List_Enumerate, new RelayCommand(() => MenuAction(ToolActions.ListEnumerate))),
+                new ToolMenuAction(Strings.Tool_List_Dash, new RelayCommand(() => MenuAction(ToolActions.ListDash))),
+                new ToolMenuAction(Strings.Tool_List_Remove, new RelayCommand(() => MenuAction(ToolActions.ListRemove)))
             ]
         );
     }
 
     public ToolState State => ToolSettings.ListToolState;
+
+    // "1. ", "2) ", "- ", "* ", "• " 같은 목록 기호.
+    [GeneratedRegex(@"^(\s*)(?:\d+[.)]|[-*•·])\s+")]
+    private static partial Regex ListMarkerRegex();
 
     private void MenuAction(ToolActions action)
     {
@@ -38,7 +46,8 @@ public class ListTool : BaseTool, ITool
         {
             ToolActions.ListEnumerate => $"{index + 1}. {line}",
             ToolActions.ListDash => $"- {line}",
-            ToolActions.ListRemove => line[(line.IndexOf(' ') + 1)..],
+            // 예전에는 첫 공백까지 무조건 잘라서 "안녕 하세요" -> "하세요"가 됐다. 이제 목록 기호만 지운다 (들여쓰기는 유지).
+            ToolActions.ListRemove => ListMarkerRegex().Replace(line, "$1", 1),
             _ => line,
         };
     }

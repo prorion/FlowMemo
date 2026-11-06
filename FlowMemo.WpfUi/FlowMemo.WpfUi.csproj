@@ -13,7 +13,35 @@
     <AssemblyName>FlowMemo</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- UI 문자열(Resources\Strings.resx)의 기본 언어. 다른 언어는 Strings.<언어>.resx로 추가한다. -->
+    <NeutralLanguage>ko</NeutralLanguage>
   </PropertyGroup>
+
+  <!--
+    Resources\Strings.resx로 FlowMemo.WpfUi.Resources.Strings 클래스를 만든다.
+    WPF는 XAML을 컴파일하는 중간에 임시 어셈블리(_wpftmp)를 먼저 빌드하므로,
+    기본 리소스 생성 단계보다 앞(MarkupCompilePass1 전)에서 만들어야 {x:Static res:Strings.키}가 동작한다.
+  -->
+  <Target Name="FlowMemoGenerateStrings"
+          BeforeTargets="MarkupCompilePass1;CoreCompile"
+          Inputs="Resources\Strings.resx"
+          Outputs="$(IntermediateOutputPath)Strings.Designer.cs">
+    <GenerateResource Sources="Resources\Strings.resx"
+                      OutputResources="$(IntermediateOutputPath)FlowMemoStrings.codegen.resources"
+                      StronglyTypedLanguage="CSharp"
+                      StronglyTypedNamespace="FlowMemo.WpfUi.Resources"
+                      StronglyTypedClassName="Strings"
+                      StronglyTypedFileName="$(IntermediateOutputPath)Strings.Designer.cs"
+                      PublicClass="true"
+                      ExecuteAsTool="false" />
+  </Target>
+  <Target Name="FlowMemoIncludeStrings" AfterTargets="FlowMemoGenerateStrings">
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)Strings.Designer.cs" />
+      <Compile Include="$(IntermediateOutputPath)Strings.Designer.cs" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />

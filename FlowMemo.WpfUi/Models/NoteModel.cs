@@ -45,7 +45,31 @@ public class NoteModel : BaseModel
 
     public int Id { get; set => SetProperty(ref field, value); }
 
-    public string Content { get; set => SetProperty(ref field, value); } = "";
+    public string Content
+    {
+        get;
+        set
+        {
+            if (SetProperty(ref field, value))
+                OnPropertyChanged(nameof(WindowTitle));
+        }
+    } = "";
+
+    /// <summary>
+    /// 작업 표시줄·Alt+Tab에 보이는 창 제목. 메모 첫 줄 + " - FlowMemo".
+    /// (예전에는 제목이 비어 있어서 작업 표시줄에서 메모를 구분할 수 없었다.)
+    /// </summary>
+    public string WindowTitle
+    {
+        get
+        {
+            const int maxLength = 40;
+            string firstLine = Content.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
+            if (firstLine.Length > maxLength)
+                firstLine = firstLine[..maxLength].TrimEnd() + "…";
+            return firstLine.Length > 0 ? $"{firstLine} - FlowMemo" : "FlowMemo";
+        }
+    }
 
     public double X { get; set => SetProperty(ref field, value); }
     public double Y { get; set => SetProperty(ref field, value); }

@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class SplitTool : BaseTool, ITool
@@ -19,13 +21,13 @@ public class SplitTool : BaseTool, ITool
     public SplitTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Split",
+            Strings.Tool_Split,
             [
-                new ToolMenuAction("Comma", new RelayCommand(() => MenuAction(ToolActions.SplitComma))),
-                new ToolMenuAction("Space", new RelayCommand(() => MenuAction(ToolActions.SplitSpace))),
-                new ToolMenuAction("Tab", new RelayCommand(() => MenuAction(ToolActions.SplitTab))),
+                new ToolMenuAction(Strings.Tool_Split_Comma, new RelayCommand(() => MenuAction(ToolActions.SplitComma))),
+                new ToolMenuAction(Strings.Tool_Split_Space, new RelayCommand(() => MenuAction(ToolActions.SplitSpace))),
+                new ToolMenuAction(Strings.Tool_Split_Tab, new RelayCommand(() => MenuAction(ToolActions.SplitTab))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Selected", new RelayCommand(() => MenuAction(ToolActions.SplitSelected)))
+                new ToolMenuAction(Strings.Tool_Split_Selected, new RelayCommand(() => MenuAction(ToolActions.SplitSelected)))
             ]
         );
     }

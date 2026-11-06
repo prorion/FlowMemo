@@ -4,6 +4,8 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class CaseTool : BaseTool, ITool
@@ -18,11 +20,11 @@ public class CaseTool : BaseTool, ITool
     public CaseTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Case",
+            Strings.Tool_Case,
             [
-                new ToolMenuAction("Lower", new RelayCommand(() => MenuAction(ToolActions.CaseLower))),
-                new ToolMenuAction("Upper", new RelayCommand(() => MenuAction(ToolActions.CaseUpper))),
-                new ToolMenuAction("Title", new RelayCommand(() => MenuAction(ToolActions.CaseTitle)))
+                new ToolMenuAction(Strings.Tool_Case_Lower, new RelayCommand(() => MenuAction(ToolActions.CaseLower))),
+                new ToolMenuAction(Strings.Tool_Case_Upper, new RelayCommand(() => MenuAction(ToolActions.CaseUpper))),
+                new ToolMenuAction(Strings.Tool_Case_Title, new RelayCommand(() => MenuAction(ToolActions.CaseTitle)))
             ]
         );
     }

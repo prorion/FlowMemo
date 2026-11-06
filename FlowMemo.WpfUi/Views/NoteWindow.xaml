@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:vm="clr-namespace:FlowMemo.WpfUi.ViewModels"
-        xmlns:controls="clr-namespace:FlowMemo.WpfUi.Controls"
+        xmlns:controls="clr-namespace:FlowMemo.WpfUi.Controls" xmlns:res="clr-namespace:FlowMemo.WpfUi.Resources"
         mc:Ignorable="d"
 
         BorderThickness="1"
@@ -27,6 +27,7 @@
         Background="{Binding Note.Background}"
         BorderBrush="{Binding Note.BorderBrush}"
         Topmost="{Binding Note.IsPinned}"
+        Title="{Binding Note.WindowTitle, Mode=OneWay}"
 
         d:DataContext="{d:DesignInstance Type=vm:NoteViewModel}"
         d:Height="300"
@@ -93,7 +94,8 @@
             <Button Name="NewButton"
                     HorizontalAlignment="Left"
                     Margin="10,0,0,0"
-                    ToolTip="New Note"
+                    ToolTip="{x:Static res:Strings.Note_NewNote_ToolTipShortcut}"
+                    AutomationProperties.Name="{x:Static res:Strings.Note_NewNote_ToolTip}"
                     Style="{StaticResource TitleBarButtonStyle}">
                 <Button.Template>
                     <ControlTemplate>
@@ -113,7 +115,8 @@
             <!-- Pin Button -->
             <ToggleButton Name="PinButton"
                           HorizontalAlignment="Center"
-                          ToolTip="Toggle On Top"
+                          ToolTip="{x:Static res:Strings.Note_Pin_ToolTip}"
+                          AutomationProperties.Name="{x:Static res:Strings.Note_Pin_ToolTip}"
                           Style="{StaticResource TitleBarButtonStyle}"
                           IsChecked="{Binding Note.IsPinned}">
                 <ToggleButton.Template>
@@ -143,11 +146,31 @@
                 </ToggleButton.Template>
             </ToggleButton>
 
+            <!-- More Button: 제목 표시줄 우클릭 메뉴(저장·색·메모 관리·설정)를 버튼으로도 연다 -->
+            <Button Name="MoreButton"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,40,0"
+                    ToolTip="{x:Static res:Strings.Note_More_ToolTip}"
+                    AutomationProperties.Name="{x:Static res:Strings.Note_More_Name}"
+                    Style="{StaticResource TitleBarButtonStyle}">
+                <Button.Template>
+                    <ControlTemplate>
+                        <Canvas>
+                            <Rectangle Width="20" Height="20" Fill="Transparent" />
+                            <Ellipse Canvas.Left="2" Canvas.Top="8.25" Width="3.5" Height="3.5" Fill="{Binding Note.TitleGridButtonForeground}" d:Fill="#464646" />
+                            <Ellipse Canvas.Left="8.25" Canvas.Top="8.25" Width="3.5" Height="3.5" Fill="{Binding Note.TitleGridButtonForeground}" d:Fill="#464646" />
+                            <Ellipse Canvas.Left="14.5" Canvas.Top="8.25" Width="3.5" Height="3.5" Fill="{Binding Note.TitleGridButtonForeground}" d:Fill="#464646" />
+                        </Canvas>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
             <!-- Close Button -->
             <Button Name="CloseButton"
                     HorizontalAlignment="Right"
                     Margin="0,0,10,0"
-                    ToolTip="Close"
+                    ToolTip="{x:Static res:Strings.Note_Close_ToolTip}"
+                    AutomationProperties.Name="{x:Static res:Strings.Note_Close_ToolTip}"
                     Style="{StaticResource TitleBarButtonStyle}">
                 <Button.Template>
                     <ControlTemplate>
@@ -167,14 +190,14 @@
             <!-- Context Menu -->
             <Grid.ContextMenu>
                 <ContextMenu Name="TitleBarContextMenu">
-                    <MenuItem Header="Save" Click="SaveMenuItem_Click" />
+                    <MenuItem Header="{x:Static res:Strings.Note_Menu_Save}" Click="SaveMenuItem_Click" />
                     <Separator />
-                    <MenuItem Header="Reset size" Click="ResetMenuItem_Click" />
+                    <MenuItem Header="{x:Static res:Strings.Note_Menu_ResetSize}" Click="ResetMenuItem_Click" />
                     <Separator />
                     <!-- Theme options are added dynamically in code behind -->
                     <Separator Name="ThemeMenuSeparator" />
-                    <MenuItem Header="Management" Click="ManagementMenuItem_Click" />
-                    <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
+                    <MenuItem Header="{x:Static res:Strings.Note_Menu_Management}" Click="ManagementMenuItem_Click" />
+                    <MenuItem Header="{x:Static res:Strings.Note_Menu_Settings}" Click="SettingsMenuItem_Click" />
                 </ContextMenu>
             </Grid.ContextMenu>
 

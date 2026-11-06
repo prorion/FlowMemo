@@ -4,6 +4,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Helpers;
 
 public static class VersionHelper
@@ -13,12 +15,13 @@ public static class VersionHelper
 
     public static async Task<bool> CheckForNewRelease(long? lastUpdateCheck, DateTimeOffset date)
     {
-        if (lastUpdateCheck < date.AddDays(-7).ToUnixTimeSeconds())
+        // 예전에는 lastUpdateCheck가 null(한 번도 확인 안 함)이면 비교가 항상 false라 업데이트 확인이 영영 돌지 않았다.
+        if (lastUpdateCheck is null || lastUpdateCheck < date.AddDays(-7).ToUnixTimeSeconds())
         {
             if (CurrentVersion < await GetLatestGitHubReleaseVersion())
                 MessageBox.Show(
-                    $"A new version of FlowMemo is available;{Environment.NewLine}https://github.com/prorion/FlowMemo/releases/latest",
-                    "Update available",
+                    string.Format(Strings.Update_Available, "https://github.com/prorion/FlowMemo/releases/latest"),
+                    Strings.Update_Title,
                     MessageBoxButton.OK,
                     MessageBoxImage.Information
                 );
@@ -49,8 +52,10 @@ public static class VersionHelper
             if (string.IsNullOrWhiteSpace(releaseVersion))
                 return null;
 
-            if (Version.TryParse($"{releaseVersion[1..]}.0", out Version? parsedVersion)) // Remove v and add extra .0, v1.2.3 -> 1.2.3.0
-                return parsedVersion;
+            // "v1.2.3", "1.2.3", "v1.2" 모두 받는다. 앞의 v는 빼고, 빠진 자리는 0으로 채운다.
+            string versionText = releaseVersion.TrimStart('v', 'V').Split('-', '+')[0];
+            if (Version.TryParse(versionText, out Version? parsedVersion))
+                return new Version(parsedVersion.Major, Math.Max(parsedVersion.Minor, 0), Math.Max(parsedVersion.Build, 0), Math.Max(parsedVersion.Revision, 0));
         }
         catch
         {

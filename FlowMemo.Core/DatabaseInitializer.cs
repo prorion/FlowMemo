@@ -22,7 +22,7 @@ public class DatabaseInitialiser
 
         int databaseSchemaVersion = GetSchemaVersion(connection);
         if (databaseSchemaVersion > SchemaVersion)
-            throw new Exception("Database is from a newer version of FlowMemo.");
+            throw new DatabaseVersionException(databaseSchemaVersion, SchemaVersion);
         else if (databaseSchemaVersion < SchemaVersion)
             await UpdateDatabase(connection, databaseSchemaVersion);
     }

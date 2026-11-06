@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class UrlTool : BaseTool, ITool
@@ -15,10 +17,10 @@ public class UrlTool : BaseTool, ITool
     public UrlTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "URL",
+            Strings.Tool_Url,
             [
-                new ToolMenuAction("Encode", new RelayCommand(() => MenuAction(ToolActions.Encode))),
-                new ToolMenuAction("Decode", new RelayCommand(() => MenuAction(ToolActions.Decode)))
+                new ToolMenuAction(Strings.Tool_Url_Encode, new RelayCommand(() => MenuAction(ToolActions.Encode))),
+                new ToolMenuAction(Strings.Tool_Url_Decode, new RelayCommand(() => MenuAction(ToolActions.Decode)))
             ]
         );
     }

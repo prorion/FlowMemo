@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class BracketTool : BaseTool, ITool
@@ -21,14 +23,14 @@ public class BracketTool : BaseTool, ITool
     public BracketTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Bracket",
+            Strings.Tool_Bracket,
             [
-                new ToolMenuAction("Parentheses", new RelayCommand(() => MenuAction(ToolActions.BracketParentheses))),
-                new ToolMenuAction("Curly", new RelayCommand(() => MenuAction(ToolActions.BracketCurly))),
-                new ToolMenuAction("Square", new RelayCommand(() => MenuAction(ToolActions.BracketSquare))),
+                new ToolMenuAction(Strings.Tool_Bracket_Parentheses, new RelayCommand(() => MenuAction(ToolActions.BracketParentheses))),
+                new ToolMenuAction(Strings.Tool_Bracket_Curly, new RelayCommand(() => MenuAction(ToolActions.BracketCurly))),
+                new ToolMenuAction(Strings.Tool_Bracket_Square, new RelayCommand(() => MenuAction(ToolActions.BracketSquare))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Trim Once", new RelayCommand(() => MenuAction(ToolActions.BracketTrimOnce))),
-                new ToolMenuAction("Trim All", new RelayCommand(() => MenuAction(ToolActions.BracketTrimAll)))
+                new ToolMenuAction(Strings.Tool_Bracket_TrimOnce, new RelayCommand(() => MenuAction(ToolActions.BracketTrimOnce))),
+                new ToolMenuAction(Strings.Tool_Bracket_TrimAll, new RelayCommand(() => MenuAction(ToolActions.BracketTrimAll)))
             ]
         );
     }

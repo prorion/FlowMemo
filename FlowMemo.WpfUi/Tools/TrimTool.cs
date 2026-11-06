@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class TrimTool : BaseTool, ITool
@@ -17,12 +19,12 @@ public class TrimTool : BaseTool, ITool
     public TrimTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Trim",
+            Strings.Tool_Trim,
             [
-                new ToolMenuAction("Start", new RelayCommand(() => MenuAction(ToolActions.TrimStart))),
-                new ToolMenuAction("End", new RelayCommand(() => MenuAction(ToolActions.TrimEnd))),
-                new ToolMenuAction("Both", new RelayCommand(() => MenuAction(ToolActions.TrimBoth))),
-                new ToolMenuAction("Empty Lines", new RelayCommand(() => MenuAction(ToolActions.TrimLines)))
+                new ToolMenuAction(Strings.Tool_Trim_Start, new RelayCommand(() => MenuAction(ToolActions.TrimStart))),
+                new ToolMenuAction(Strings.Tool_Trim_End, new RelayCommand(() => MenuAction(ToolActions.TrimEnd))),
+                new ToolMenuAction(Strings.Tool_Trim_Both, new RelayCommand(() => MenuAction(ToolActions.TrimBoth))),
+                new ToolMenuAction(Strings.Tool_Trim_EmptyLines, new RelayCommand(() => MenuAction(ToolActions.TrimLines)))
             ]
         );
     }

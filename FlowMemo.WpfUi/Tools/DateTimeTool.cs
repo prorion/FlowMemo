@@ -3,6 +3,8 @@ using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 using System.Globalization;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class DateTimeTool : BaseTool, ITool
@@ -16,10 +18,10 @@ public class DateTimeTool : BaseTool, ITool
     public DateTimeTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Date Time",
+            Strings.Tool_DateTime,
             [
-                new ToolMenuAction("Sortable Date Time", new RelayCommand(() => MenuAction(ToolActions.DateTimeSortableDateTime))),
-                new ToolMenuAction("Week Number", new RelayCommand(() => MenuAction(ToolActions.DateTimeWeekNumber)))
+                new ToolMenuAction(Strings.Tool_DateTime_Sortable, new RelayCommand(() => MenuAction(ToolActions.DateTimeSortableDateTime))),
+                new ToolMenuAction(Strings.Tool_DateTime_WeekNumber, new RelayCommand(() => MenuAction(ToolActions.DateTimeWeekNumber)))
             ]
         );
     }
@@ -56,6 +58,7 @@ public class DateTimeTool : BaseTool, ITool
         if (!string.IsNullOrEmpty(dateString) && DateTime.TryParse(dateString, out DateTime parsedDateTime))
             return parsedDateTime;
 
-        return DateTime.UtcNow;
+        // 예전에는 UtcNow라서 한국에서는 9시간 이른 시각이 들어갔다 (시간대 표시도 없이).
+        return DateTime.Now;
     }
 }

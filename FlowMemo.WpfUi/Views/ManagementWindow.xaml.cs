@@ -21,6 +21,8 @@ public partial class ManagementWindow : Window
 
         NotesListView.MouseUp += NotesListView_MouseUp;
         NotesListView.MouseDoubleClick += NotesListView_MouseDoubleClick;
+
+        Closed += (s, e) => _viewModel.Detach();
     }
 
     private void NotesListView_MouseUp(object sender, MouseButtonEventArgs e)

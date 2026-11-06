@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Controls;
 using FlowMemo.WpfUi.Commands;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class JoinTool : BaseTool, ITool
@@ -16,11 +18,11 @@ public class JoinTool : BaseTool, ITool
     public JoinTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Join",
+            Strings.Tool_Join,
             [
-                new ToolMenuAction("Comma", new RelayCommand(() => MenuAction(ToolActions.JoinComma))),
-                new ToolMenuAction("Space", new RelayCommand(() => MenuAction(ToolActions.JoinSpace))),
-                new ToolMenuAction("Tab", new RelayCommand(() => MenuAction(ToolActions.JoinTab)))
+                new ToolMenuAction(Strings.Tool_Join_Comma, new RelayCommand(() => MenuAction(ToolActions.JoinComma))),
+                new ToolMenuAction(Strings.Tool_Join_Space, new RelayCommand(() => MenuAction(ToolActions.JoinSpace))),
+                new ToolMenuAction(Strings.Tool_Join_Tab, new RelayCommand(() => MenuAction(ToolActions.JoinTab)))
             ]
         );
     }

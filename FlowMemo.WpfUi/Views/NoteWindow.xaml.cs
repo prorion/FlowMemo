@@ -5,11 +5,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Helpers;
+using FlowMemo.WpfUi.Interop;
+using FlowMemo.WpfUi.Interop.Constants;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
 using FlowMemo.WpfUi.Themes;
 using FlowMemo.WpfUi.ViewModels;
@@ -24,6 +28,12 @@ public partial class NoteWindow : Window
 
     private readonly NoteViewModel _viewModel;
 
+    // 고정(핀) 상태와 실제 창의 '항상 위' 상태가 어긋나면 바로잡는다.
+    // 원본 Pinny Notes는 v1.15~v1.17에 걸쳐 "고정을 풀어도 계속 위에 남는" 문제를 고쳐 왔지만 완전히 해결하지 못했다.
+    private readonly DispatcherTimer _topmostGuardTimer;
+
+    private bool _restoringFromMinimize;
+
     #region NoteWindow
 
     public NoteWindow(SettingsService settingsService, MessengerService messengerService, ThemeService themeService, NoteViewModel viewModel)
@@ -34,13 +44,21 @@ public partial class NoteWindow : Window
         _themeService = themeService;
 
         _viewModel = viewModel;
+        _viewModel.Note.PropertyChanged += OnNotePropertyChanged;
 
         DataContext = _viewModel;
 
         InitializeComponent();
 
+        _topmostGuardTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromSeconds(1.5)
+        };
+        _topmostGuardTimer.Tick += (s, e) => SyncTopmostState();
+
         Activated += Window_Activated;
         Closing += Window_Closing;
+        Closed += Window_Closed;
         Deactivated += Window_Deactivated;
         MouseDown += NoteWindow_MouseDown;
         MouseEnter += Window_MouseEnter;
@@ -50,10 +68,32 @@ public partial class NoteWindow : Window
 
         TitleBarGrid.MouseDown += TitleBar_MouseDown;
         NewButton.Click += NewButton_Click;
+        MoreButton.Click += MoreButton_Click;
         CloseButton.Click += CloseButton_Click;
+        // '더 보기'로 열 때 정한 위치를 지워서, 우클릭으로 열면 다시 마우스 위치에 뜨게 한다.
+        TitleBarContextMenu.Closed += (s, e) =>
+        {
+            TitleBarContextMenu.ClearValue(ContextMenu.PlacementTargetProperty);
+            TitleBarContextMenu.ClearValue(ContextMenu.PlacementProperty);
+        };
+
+        // Windows 스티커 메모와 같은 단축키
+        InputBindings.Add(new KeyBinding(new Commands.RelayCommand(OpenChildNote), Key.N, ModifierKeys.Control));
 
         PopulateTitleBarContextMenu();
     }
+
+    /// <summary>메모를 앞으로 가져온다 (최소화돼 있으면 복원).</summary>
+    public void ActivateNote()
+    {
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    /// <summary>바뀐 내용을 바로 저장한다 (앱 종료, Windows 종료 때).</summary>
+    public void SaveNow()
+        => _viewModel.SaveNote().GetAwaiter().GetResult();
 
     private void PopulateTitleBarContextMenu()
     {
@@ -62,9 +102,9 @@ public partial class NoteWindow : Window
         {
             MenuItem menuItem = new()
             {
-                Header = colourScheme.Name,
+                Header = colourScheme.DisplayName,
                 Command = _viewModel.ChangeThemeColourCommand,
-                CommandParameter = colourScheme.Name,
+                CommandParameter = colourScheme.Name, // DB에는 영어 키(Yellow 등)를 그대로 저장한다.
                 Icon = colourScheme.Icon
             };
 
@@ -79,6 +119,29 @@ public partial class NoteWindow : Window
         _viewModel.OnWindowLoaded(
             ScreenHelper.GetWindowHandle(this)
         );
+
+        EnsureOnScreen();
+
+        SyncTopmostState();
+        _topmostGuardTimer.Start();
+    }
+
+    /// <summary>
+    /// 모니터를 떼어내거나 배치를 바꾸면 저장된 위치가 화면 밖일 수 있다.
+    /// 그대로 두면 열려 있는데 보이지 않는 메모가 생기므로 주 모니터로 옮긴다.
+    /// </summary>
+    private void EnsureOnScreen()
+    {
+        nint handle = ScreenHelper.GetWindowHandle(this);
+        if (ScreenHelper.IsTitleAreaOnAnyScreen(handle))
+            return;
+
+        const int screenMargin = 78;
+        Rect workArea = ScreenHelper.GetPrimaryScreenBounds();
+        Left = workArea.Left + screenMargin;
+        Top = workArea.Top + screenMargin;
+
+        _viewModel.OnWindowMoved(Left, Top);
     }
 
     private void NoteWindow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -95,11 +158,63 @@ public partial class NoteWindow : Window
 
     private void NoteWindow_StateChanged(object? sender, EventArgs e)
     {
-        if (WindowState != WindowState.Minimized)
+        if (WindowState != WindowState.Minimized || _restoringFromMinimize)
             return;
 
-        if (_noteSettings.MinimizeMode == MinimizeMode.Prevent || (_noteSettings.MinimizeMode == MinimizeMode.PreventIfPinned && _viewModel.Note.IsPinned))
+        bool preventMinimize = _noteSettings.MinimizeMode == MinimizeMode.Prevent
+            || (_noteSettings.MinimizeMode == MinimizeMode.PreventIfPinned && _viewModel.Note.IsPinned);
+        if (!preventMinimize)
+            return;
+
+        // StateChanged 안에서 바로 Normal로 되돌리면 무시되는 경우가 있다
+        // (고정하지 않은 메모가 '바탕 화면 보기'로 계속 최소화되던 문제).
+        // 메시지 처리가 끝난 뒤 복원하고, 잠깐 맨 위로 올려 바탕 화면 뒤에 묻히지 않게 한다.
+        _restoringFromMinimize = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+        {
             WindowState = WindowState.Normal;
+
+            nint handle = ScreenHelper.GetWindowHandle(this);
+            if (handle != 0)
+                User32.SetWindowPos(handle, HWND.TOPMOST, 0, 0, 0, 0, SWP.NOMOVE | SWP.NOSIZE | SWP.NOACTIVATE);
+
+            DispatcherTimer settle = new() { Interval = TimeSpan.FromMilliseconds(150) };
+            settle.Tick += (s, args) =>
+            {
+                settle.Stop();
+                _restoringFromMinimize = false;
+                SyncTopmostState(); // 고정하지 않은 메모는 다시 '항상 위'를 끈다.
+            };
+            settle.Start();
+        });
+    }
+
+    private void OnNotePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(NoteModel.IsPinned))
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, SyncTopmostState);
+    }
+
+    private void SyncTopmostState()
+    {
+        if (!IsLoaded || _restoringFromMinimize || WindowState == WindowState.Minimized)
+            return;
+
+        nint handle = ScreenHelper.GetWindowHandle(this);
+        if (handle == 0 || !User32.IsWindow(handle))
+            return;
+
+        bool shouldBeTopmost = _viewModel.Note.IsPinned;
+        bool isTopmost = (User32.GetWindowLongPtrW(handle, GWL.EXSTYLE) & WS_EX.TOPMOST) != 0;
+        if (isTopmost == shouldBeTopmost)
+            return;
+
+        User32.SetWindowPos(
+            handle,
+            shouldBeTopmost ? HWND.TOPMOST : HWND.NOTOPMOST,
+            0, 0, 0, 0,
+            SWP.NOMOVE | SWP.NOSIZE | SWP.NOACTIVATE
+        );
     }
 
     private void Window_MouseEnter(object sender, MouseEventArgs e)
@@ -129,21 +244,42 @@ public partial class NoteWindow : Window
         _viewModel.UpdateOpacity();
         HideTitleBar();
 
-        await _viewModel.SaveNote();
+        try
+        {
+            await _viewModel.SaveNote();
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Report(ex, "SaveNote (deactivated)");
+        }
     }
 
     private async void Window_Closing(object? sender, CancelEventArgs e)
     {
-        e.Cancel = await _viewModel.CloseNote();
+        // CloseNote는 창 닫기를 막지 않는다. (예전 코드의 e.Cancel = await ...는 await 뒤라 효과가 없었다.)
+        try
+        {
+            await _viewModel.CloseNote();
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Report(ex, "CloseNote");
+        }
+    }
+
+    private void Window_Closed(object? sender, EventArgs e)
+    {
+        // 메신저와 설정 모델은 앱 전체에서 살아 있으므로, 구독을 풀지 않으면 닫힌 창이 메모리에 계속 남는다.
+        _topmostGuardTimer.Stop();
+        _messengerService.Unsubscribe<WindowActionMessage>(OnWindowActionMessage);
+        _viewModel.Note.PropertyChanged -= OnNotePropertyChanged;
+        _viewModel.Detach();
     }
 
     private void OnWindowActionMessage(WindowActionMessage message)
     {
         if (message.Action == WindowAction.Activate)
-        {
-            WindowState = WindowState.Normal;
-            Activate();
-        }
+            ActivateNote();
     }
 
     #endregion
@@ -162,10 +298,21 @@ public partial class NoteWindow : Window
     }
 
     private void NewButton_Click(object sender, RoutedEventArgs e)
+        => OpenChildNote();
+
+    private void OpenChildNote()
     {
         _messengerService.Publish(
             new OpenNoteWindowMessage(ParentNote: _viewModel.Note)
         );
+    }
+
+    private void MoreButton_Click(object sender, RoutedEventArgs e)
+    {
+        // 예전에는 저장·색·메모 관리·설정이 제목 표시줄 우클릭에만 있어서 찾기 어려웠다.
+        TitleBarContextMenu.PlacementTarget = MoreButton;
+        TitleBarContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        TitleBarContextMenu.IsOpen = true;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -195,13 +342,41 @@ public partial class NoteWindow : Window
     {
         SaveFileDialog saveFileDialog = new()
         {
-            Filter = "Text Documents (*.txt)|*.txt|All Files|*"
+            Filter = Strings.Note_SaveDialog_Filter,
+            FileName = SuggestFileName(NoteTextBox.Text),
+            DefaultExt = ".txt",
+            AddExtension = true
         };
 
-        if (saveFileDialog.ShowDialog(this) == false)
+        if (saveFileDialog.ShowDialog(this) != true)
             return;
 
-        File.WriteAllText(saveFileDialog.FileName, NoteTextBox.Text);
+        try
+        {
+            File.WriteAllText(saveFileDialog.FileName, NoteTextBox.Text);
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, "Save note to file");
+            MessageBox.Show(
+                this,
+                string.Format(Strings.Error_SaveFile, ex.Message),
+                Strings.Error_Title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning
+            );
+        }
+    }
+
+    /// <summary>메모 첫 줄로 파일 이름을 제안한다 (파일 이름에 못 쓰는 문자는 뺀다).</summary>
+    private static string SuggestFileName(string text)
+    {
+        string firstLine = text.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0) ?? "";
+        char[] invalid = Path.GetInvalidFileNameChars();
+        string name = new([.. firstLine.Where(c => !invalid.Contains(c))]);
+        if (name.Length > 50)
+            name = name[..50].Trim();
+        return name.Length > 0 ? name : "FlowMemo";
     }
 
     private void ResetMenuItem_Click(object sender, RoutedEventArgs e)

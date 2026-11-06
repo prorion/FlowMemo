@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
+using FlowMemo.WpfUi.Resources;
 
 namespace FlowMemo.WpfUi.Services;
 
@@ -62,7 +63,7 @@ public class NotifyIconService : IDisposable
             IconSource = new System.Windows.Media.Imaging.BitmapImage(
                 new Uri("pack://application:,,,/Images/icon.ico")
             ),
-            ToolTipText = "FlowMemo",
+            ToolTipText = Strings.App_Name,
             Visibility = Visibility.Visible
         };
 
@@ -71,25 +72,25 @@ public class NotifyIconService : IDisposable
 
         MenuItem newNoteItem = new()
         {
-            Header = "New Note"
+            Header = Strings.Tray_NewNote
         };
         newNoteItem.Click += NewNote_Click;
 
         MenuItem managementWindowItem = new()
         {
-            Header = "Management Window"
+            Header = Strings.Tray_Management
         };
         managementWindowItem.Click += ManagementWindow_Click;
 
         MenuItem settingsItem = new()
         {
-            Header = "Settings"
+            Header = Strings.Tray_Settings
         };
         settingsItem.Click += Settings_Click;
 
         MenuItem exitItem = new()
         {
-            Header = "Exit"
+            Header = Strings.Tray_Exit
         };
         exitItem.Click += Exit_Click;
 

@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class IndentTool : BaseTool, ITool
@@ -16,11 +18,11 @@ public class IndentTool : BaseTool, ITool
     public IndentTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Indent",
+            Strings.Tool_Indent,
             [
-                new ToolMenuAction("2 Spaces", new RelayCommand(() => MenuAction(ToolActions.Indent2Spaces))),
-                new ToolMenuAction("4 Spaces", new RelayCommand(() => MenuAction(ToolActions.Indent4Spaces))),
-                new ToolMenuAction("Tab", new RelayCommand(() => MenuAction(ToolActions.IndentTab)))
+                new ToolMenuAction(Strings.Tool_Indent_2Spaces, new RelayCommand(() => MenuAction(ToolActions.Indent2Spaces))),
+                new ToolMenuAction(Strings.Tool_Indent_4Spaces, new RelayCommand(() => MenuAction(ToolActions.Indent4Spaces))),
+                new ToolMenuAction(Strings.Tool_Indent_Tab, new RelayCommand(() => MenuAction(ToolActions.IndentTab)))
             ]
         );
     }

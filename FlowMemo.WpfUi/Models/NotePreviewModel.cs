@@ -16,6 +16,8 @@ public class NotePreviewModel : BaseModel
         ContentPreview = noteDto.Content;
 
         ThemeColourScheme = noteDto.ThemeColourScheme;
+
+        IsOpen = noteDto.IsOpen;
     }
 
     public int Id { get; set => SetProperty(ref field, value); }
@@ -41,6 +43,9 @@ public class NotePreviewModel : BaseModel
     public Brush TextBrush { get; set => SetProperty(ref field, value); } = Brushes.Black;
 
     public bool IsSelected { get; set => SetProperty(ref field, value); }
+
+    /// <summary>메모 창이 열려 있는지. 관리 창에서 닫힌 메모를 흐리게 보여 준다.</summary>
+    public bool IsOpen { get; set => SetProperty(ref field, value); }
 
     public void UpdateBrushes(Palette palette)
     {

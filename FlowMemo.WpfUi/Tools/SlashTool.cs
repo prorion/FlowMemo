@@ -4,6 +4,8 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class SlashTool : BaseTool, ITool
@@ -18,11 +20,11 @@ public class SlashTool : BaseTool, ITool
     public SlashTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Slash",
+            Strings.Tool_Slash,
             [
-                new ToolMenuAction("All Forward (/)", new RelayCommand(() => MenuAction(ToolActions.SlashAllForward))),
-                new ToolMenuAction("All Back (\\)", new RelayCommand(() => MenuAction(ToolActions.SlashAllBack))),
-                new ToolMenuAction("Swap", new RelayCommand(() => MenuAction(ToolActions.SlashSwap)))
+                new ToolMenuAction(Strings.Tool_Slash_AllForward, new RelayCommand(() => MenuAction(ToolActions.SlashAllForward))),
+                new ToolMenuAction(Strings.Tool_Slash_AllBack, new RelayCommand(() => MenuAction(ToolActions.SlashAllBack))),
+                new ToolMenuAction(Strings.Tool_Slash_Swap, new RelayCommand(() => MenuAction(ToolActions.SlashSwap)))
             ]
         );
     }

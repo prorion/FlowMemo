@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class QuoteTool : BaseTool, ITool
@@ -20,13 +22,13 @@ public class QuoteTool : BaseTool, ITool
     public QuoteTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Quote",
+            Strings.Tool_Quote,
             [
-                new ToolMenuAction("Double", new RelayCommand(() => MenuAction(ToolActions.QuoteDouble))),
-                new ToolMenuAction("Single", new RelayCommand(() => MenuAction(ToolActions.QuoteSingle))),
-                new ToolMenuAction("Backtick", new RelayCommand(() => MenuAction(ToolActions.Backtick))),
+                new ToolMenuAction(Strings.Tool_Quote_Double, new RelayCommand(() => MenuAction(ToolActions.QuoteDouble))),
+                new ToolMenuAction(Strings.Tool_Quote_Single, new RelayCommand(() => MenuAction(ToolActions.QuoteSingle))),
+                new ToolMenuAction(Strings.Tool_Quote_Backtick, new RelayCommand(() => MenuAction(ToolActions.Backtick))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Trim", new RelayCommand(() => MenuAction(ToolActions.Trim)))
+                new ToolMenuAction(Strings.Tool_Quote_Trim, new RelayCommand(() => MenuAction(ToolActions.Trim)))
             ]
         );
     }

@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
 using System.Windows.Controls;
 
 using FlowMemo.WpfUi.Controls;
-using FlowMemo.WpfUi.Services;
+using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Models;
+using FlowMemo.WpfUi.Resources;
+using FlowMemo.WpfUi.Services;
 
 namespace FlowMemo.WpfUi.Tools;
 
@@ -14,6 +17,7 @@ public abstract class BaseTool
     protected NoteTextBoxControl NoteTextBox;
 
     private MenuItem? _menuItem;
+    private string _toolName = "";
 
     public BaseTool(NoteTextBoxControl noteTextBox)
     {
@@ -28,10 +32,13 @@ public abstract class BaseTool
 
     protected void InitializeMenuItem(string header, ToolMenuAction[] menuActions)
     {
+        _toolName = header;
         _menuItem = new()
         {
             Header = header,
         };
+        // 하위 메뉴 화살표(>)가 글자에 붙지 않게 폭을 넉넉히 주고, 다른 메뉴 항목과 정렬을 맞춘다.
+        MenuHelper.AlignSubmenuHeader(_menuItem, minWidth: 180);
 
         foreach (ToolMenuAction menuAction in menuActions)
         {
@@ -58,7 +65,10 @@ public abstract class BaseTool
     {
         if (NoteTextBox.HasSelectedText)
         {
-            NoteTextBox.SelectedText = function(NoteTextBox.SelectedText, action);
+            if (!TryRun(() => function(NoteTextBox.SelectedText, action), out string result))
+                return;
+
+            NoteTextBox.SelectedText = result;
         }
         else
         {
@@ -66,8 +76,12 @@ public abstract class BaseTool
             // Ignore trailing new line if it was automatically added
             if (NoteTextBox.NewLineAtEnd && NoteTextBox.Text.EndsWith(Environment.NewLine))
                 noteText = noteText[..^Environment.NewLine.Length];
+
+            if (!TryRun(() => function(noteText, action), out string result))
+                return;
+
             NoteTextBox.SelectAll();
-            NoteTextBox.SelectedText = function(noteText, action);
+            NoteTextBox.SelectedText = result;
             NoteTextBox.SelectionLength = 0;
             if (NoteTextBox.Text.Length > 0)
                 NoteTextBox.CaretIndex = NoteTextBox.Text.Length - 1;
@@ -83,22 +97,29 @@ public abstract class BaseTool
         if (NoteTextBox.NewLineAtEnd && lines[^1] == "")
             lines = lines[..^1];
 
-        List<string> newLines = [];
-        for (int i = 0; i < lines.Length; i++)
-        {
-            string? line = function(lines[i], i, action);
-            if (line != null)
-                newLines.Add(line);
-        }
-
-        noteText = string.Join(Environment.NewLine, newLines);
+        bool succeeded = TryRun(
+            () =>
+            {
+                List<string> newLines = [];
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string? line = function(lines[i], i, action);
+                    if (line != null)
+                        newLines.Add(line);
+                }
+                return string.Join(Environment.NewLine, newLines);
+            },
+            out string result
+        );
+        if (!succeeded)
+            return;
 
         if (NoteTextBox.HasSelectedText)
-            NoteTextBox.SelectedText = noteText;
+            NoteTextBox.SelectedText = result;
         else
         {
             NoteTextBox.SelectAll();
-            NoteTextBox.SelectedText = noteText;
+            NoteTextBox.SelectedText = result;
             NoteTextBox.SelectionLength = 0;
             if (NoteTextBox.Text.Length > 0)
                 NoteTextBox.CaretIndex = NoteTextBox.Text.Length - 1;
@@ -115,5 +136,31 @@ public abstract class BaseTool
         NoteTextBox.CaretIndex = caretIndex + text.Length;
         if (!NoteTextBox.HasSelectedText && NoteTextBox.KeepNewLineAtEndVisible && caretAtEnd)
             NoteTextBox.ScrollToEnd();
+    }
+
+    /// <summary>
+    /// 도구 함수를 실행한다. 실패하면(예: Base64가 아닌 텍스트를 디코딩) 텍스트는 그대로 두고 안내한다.
+    /// 예전에는 이런 예외가 처리되지 않아 앱이 바로 종료됐다.
+    /// </summary>
+    private bool TryRun(Func<string> function, out string result)
+    {
+        try
+        {
+            result = function();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, $"Tool '{_toolName}'");
+            MessageBox.Show(
+                Window.GetWindow(NoteTextBox),
+                string.Format(Strings.Error_ToolFailed, _toolName),
+                Strings.App_Name,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
+            result = "";
+            return false;
+        }
     }
 }

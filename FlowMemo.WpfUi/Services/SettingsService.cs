@@ -1,5 +1,9 @@
-﻿using FlowMemo.Core.DataTransferObjects;
+﻿using System.ComponentModel;
+using System.Windows.Threading;
+
+using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Repositories;
+using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Models;
 
 namespace FlowMemo.WpfUi.Services;
@@ -7,6 +11,10 @@ namespace FlowMemo.WpfUi.Services;
 public class SettingsService(SettingsRepository settingsRepository)
 {
     private readonly SettingsRepository _settingsRepository = settingsRepository;
+
+    // 예전에는 앱을 정상 종료할 때만 설정을 저장해서, 강제 종료·오류·Windows 종료 때 바꾼 설정이 사라졌다.
+    // 이제 설정이 바뀌면 잠시 뒤(연속 변경은 묶어서) 바로 저장한다.
+    private DispatcherTimer? _autoSaveTimer;
 
     public ApplicationSettingsModel ApplicationSettings { get; private set; } = null!;
     public NoteSettingsModel NoteSettings { get; private set; } = null!;
@@ -94,6 +102,41 @@ public class SettingsService(SettingsRepository settingsRepository)
             TrimToolState = settings.TrimState,
             UrlToolState = settings.UrlState
         };
+
+        EnableAutoSave();
+    }
+
+    private void EnableAutoSave()
+    {
+        _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+        _autoSaveTimer.Tick += OnAutoSaveTimerTick;
+
+        ApplicationSettings.PropertyChanged += OnAnySettingChanged;
+        NoteSettings.PropertyChanged += OnAnySettingChanged;
+        EditorSettings.PropertyChanged += OnAnySettingChanged;
+        ToolSettings.PropertyChanged += OnAnySettingChanged;
+    }
+
+    private void OnAnySettingChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BaseModel.IsSaved) || _autoSaveTimer is null)
+            return;
+
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Start();
+    }
+
+    private async void OnAutoSaveTimerTick(object? sender, EventArgs e)
+    {
+        _autoSaveTimer?.Stop();
+        try
+        {
+            await Save();
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, "Settings auto-save");
+        }
     }
 
     public async Task Save()

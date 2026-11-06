@@ -50,13 +50,33 @@ public class WindowService
         _messengerService.Subscribe<OpenManagementWindowMessage>(OnOpenManagementWindowMessage);
     }
 
+    /// <summary>지금 창이 열려 있는 메모인지. (DB의 IsOpen은 '다음 시작 때 다시 열지'라서 실제와 다를 수 있다.)</summary>
+    public bool IsNoteWindowOpen(int noteId)
+        => _openNoteWindows.ContainsKey(noteId);
+
+    /// <summary>열린 메모를 모두 바로 저장한다 (앱 종료, Windows 종료 때).</summary>
+    public void SaveAllOpenNotes()
+    {
+        foreach (NoteWindow window in _openNoteWindows.Values.ToList())
+        {
+            try
+            {
+                window.SaveNow();
+            }
+            catch (Exception ex)
+            {
+                ErrorReporter.Log(ex, "SaveAllOpenNotes");
+            }
+        }
+    }
+
     private void OnApplicationActionMessage(ApplicationActionMessage message)
     {
         // TO DO: Add settings for this behaviour.
         switch (message.Action)
         {
             case ApplicationAction.Start:
-                DoStartUpAction();
+                ErrorReporter.FireAndForget(DoStartUpAction(), "Startup");
                 break;
             case ApplicationAction.NewInstance:
                 DoNewInstanceAction();
@@ -64,7 +84,7 @@ public class WindowService
         }
     }
 
-    private async void DoStartUpAction()
+    private async Task DoStartUpAction()
     {
         switch (_settingsService.ApplicationSettings.StartupBehaviour)
         {
@@ -78,11 +98,11 @@ public class WindowService
                 }
 
                 foreach (NoteDto note in openNotes)
-                    _ = OpenNoteWindow(note.Id);
+                    OpenNoteWindowSafe(note.Id);
 
                 break;
             case StartupBehaviour.CreateNewNote:
-                _ = OpenNoteWindow();
+                OpenNoteWindowSafe();
                 break;
             case StartupBehaviour.ShowManagementWindow:
                 OpenManagementWindow();
@@ -95,7 +115,7 @@ public class WindowService
         switch (_settingsService.ApplicationSettings.NewInstanceBehaviour)
         {
             case NewInstanceBehaviour.CreateNewNote:
-                _ = OpenNoteWindow();
+                OpenNoteWindowSafe();
                 break;
             case NewInstanceBehaviour.ShowManagementWindow:
                 OpenManagementWindow();
@@ -109,7 +129,7 @@ public class WindowService
         if (_managementWindow is not null && message.isManagementWindowParent)
             managementWindowHandle = ScreenHelper.GetWindowHandle(_managementWindow);
 
-        _ = OpenNoteWindow(message.NoteId, message.ParentNote, managementWindowHandle);
+        OpenNoteWindowSafe(message.NoteId, message.ParentNote, managementWindowHandle);
     }
 
     private void OnMultipleNoteWindowActionMessage(MultipleNoteWindowActionMessage message)
@@ -119,7 +139,7 @@ public class WindowService
             switch (message.Action)
             {
                 case NoteWindowAction.Open:
-                    _ = OpenNoteWindow(noteId);
+                    OpenNoteWindowSafe(noteId);
                     break;
                 case NoteWindowAction.Close:
                     CloseNoteWindow(noteId);
@@ -146,7 +166,7 @@ public class WindowService
             _settingsWindow.Closed += (s, e) => _settingsWindow = null;
         }
 
-        _settingsWindow.Owner = message.Owner;
+        _settingsWindow.SetOwnerAndPosition(message.Owner);
 
         if (!_settingsWindow.IsVisible)
             _settingsWindow.Show();
@@ -157,25 +177,32 @@ public class WindowService
     private void OnOpenManagementWindowMessage(OpenManagementWindowMessage message)
         => OpenManagementWindow();
 
+    // 예전에는 `_ = OpenNoteWindow()`로 호출해서, 창을 만들다 예외가 나면 아무 표시 없이 사라졌다
+    // (한국어 Windows에서 노트 창이 하나도 안 열리던 원인).
+    private void OpenNoteWindowSafe(int? noteId = null, NoteModel? parentNote = null, nint? managementWindowHandle = null)
+        => ErrorReporter.FireAndForget(OpenNoteWindow(noteId, parentNote, managementWindowHandle), "OpenNoteWindow");
+
     private async Task OpenNoteWindow(int? noteId = null, NoteModel? parentNote = null, nint? managementWindowHandle = null)
     {
-        NoteWindow window;
-
         if (noteId is not null && _openNoteWindows.TryGetValue((int)noteId, out NoteWindow? existingWindow))
         {
-            window = existingWindow;
-            window.Activate();
+            existingWindow.ActivateNote();
+            return;
         }
-        else
+
+        NoteViewModel viewModel = new(_noteRepository, _appMetadataService, _settingsService, _messengerService, _themeService);
+        await viewModel.Initialize(noteId, parentNote, managementWindowHandle);
+
+        NoteWindow window = new(_settingsService, _messengerService, _themeService, viewModel);
+        int id = viewModel.Note.Id;
+        window.Closed += (s, e) =>
         {
-            NoteViewModel viewModel = new(_noteRepository, _appMetadataService, _settingsService, _messengerService, _themeService);
-            await viewModel.Initialize(noteId, parentNote, managementWindowHandle);
-            window = new(_settingsService, _messengerService, _themeService, viewModel);
+            if (_openNoteWindows.TryGetValue(id, out NoteWindow? tracked) && ReferenceEquals(tracked, window))
+                _openNoteWindows.Remove(id);
+        };
 
-            window.Show();
-
-            _openNoteWindows[viewModel.Note.Id] = window;
-        }
+        _openNoteWindows[id] = window;
+        window.Show();
     }
 
     private void CloseNoteWindow(int noteId)
@@ -192,11 +219,15 @@ public class WindowService
         if (_managementWindow is null || !_managementWindow.IsLoaded)
         {
             _managementWindow = _serviceProvider.GetRequiredService<ManagementWindow>();
-            _managementWindow.Closed += (s, e) => _settingsWindow = null;
+            // 예전 코드는 여기서 _settingsWindow를 비웠다 (원본 Pinny Notes의 오타).
+            _managementWindow.Closed += (s, e) => _managementWindow = null;
         }
 
         if (!_managementWindow.IsVisible)
             _managementWindow.Show();
+
+        if (_managementWindow.WindowState == System.Windows.WindowState.Minimized)
+            _managementWindow.WindowState = System.Windows.WindowState.Normal;
 
         _managementWindow.Activate();
     }

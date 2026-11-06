@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Input;
 
 using FlowMemo.Core.DataTransferObjects;
@@ -8,6 +9,7 @@ using FlowMemo.Core.Repositories;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
 using FlowMemo.WpfUi.Themes;
 
@@ -17,6 +19,7 @@ public class ManagementViewModel : BaseViewModel
 {
     private readonly NoteRepository _noteRepository;
     private readonly ThemeService _themeService;
+    private readonly WindowService _windowService;
 
     private readonly Dictionary<int, int> _notePreviewIdIndexMap = []; // Use this since we don't have a Observable Dictionary
     private readonly Dictionary<int, NotePreviewModel> _selectedNotePreviews = [];
@@ -26,20 +29,24 @@ public class ManagementViewModel : BaseViewModel
         AppMetadataService appMetadataService,
         SettingsService settingsService,
         MessengerService messengerService,
-        ThemeService themeService
+        ThemeService themeService,
+        WindowService windowService
     ) : base(appMetadataService, settingsService, messengerService)
     {
         _noteRepository = noteRepository;
         _themeService = themeService;
-
-        LoadNotes();
+        _windowService = windowService;
 
         NewNoteCommand = new RelayCommand(OnNewNoteCommand);
         OpenSettingsCommand = new RelayCommand(OnOpenSettingsCommand);
 
         OpenNotesCommand = new RelayCommand(OnOpenNotesCommand);
         CloseNotesCommand = new RelayCommand(OnCloseNotesCommand);
-        DeleteNotesCommand = new RelayCommand(OnDeleteNotesCommand);
+        // 선택한 메모가 없으면 '메모 삭제'를 비활성으로 둔다 (예전에는 눌러도 아무 일도 없었다).
+        DeleteNotesCommand = new RelayCommand(OnDeleteNotesCommand, () => _selectedNotePreviews.Count > 0);
+
+        // 명령을 만든 뒤에 불러온다 (불러오는 중에 DeleteNotesCommand를 쓸 수 있다).
+        LoadNotes();
 
         MessengerService.Subscribe<NoteActionMessage>(OnNoteActionMessage);
     }
@@ -49,7 +56,7 @@ public class ManagementViewModel : BaseViewModel
 
     public ICommand OpenNotesCommand { get; }
     public ICommand CloseNotesCommand { get; }
-    public ICommand DeleteNotesCommand { get; }
+    public RelayCommand DeleteNotesCommand { get; }
 
     public ObservableCollection<NotePreviewModel> NotePreviews { get; } = [];
 
@@ -61,7 +68,11 @@ public class ManagementViewModel : BaseViewModel
 
         IEnumerable<NoteDto> noteDtos = await _noteRepository.GetAll();
         foreach (NoteDto noteDto in noteDtos)
+        {
             AddNotePreview(noteDto, colourMode);
+            // DB의 IsOpen은 '다음 시작 때 다시 열지'라서, 지금 실제로 창이 열려 있는지로 바꿔 보여 준다.
+            NotePreviews[^1].IsOpen = _windowService.IsNoteWindowOpen(noteDto.Id);
+        }
     }
 
     private void OnNoteActionMessage(NoteActionMessage message)
@@ -74,18 +85,30 @@ public class ManagementViewModel : BaseViewModel
             case NoteAction.Updated:
                 UpdatedNotePreview(message.NoteDto);
                 break;
+            case NoteAction.Closed:
+                if (_notePreviewIdIndexMap.TryGetValue(message.NoteDto.Id, out int closedIndex))
+                    NotePreviews[closedIndex].IsOpen = message.NoteDto.IsOpen;
+                break;
             case NoteAction.Deleted:
                 RemoveNotePreview(message.NoteDto.Id);
                 break;
         }
     }
 
+    /// <summary>관리 창이 닫힐 때 호출한다. 구독을 풀지 않으면 닫힌 창의 뷰모델이 계속 메시지를 받는다.</summary>
+    public void Detach()
+        => MessengerService.Unsubscribe<NoteActionMessage>(OnNoteActionMessage);
+
     private void UpdatedNotePreview(NoteDto dto)
     {
-        NotePreviewModel notePreview = NotePreviews[_notePreviewIdIndexMap[dto.Id]];
+        if (!_notePreviewIdIndexMap.TryGetValue(dto.Id, out int index))
+            return;
+
+        NotePreviewModel notePreview = NotePreviews[index];
 
         notePreview.ContentPreview = dto.Content;
         notePreview.ThemeColourScheme = dto.ThemeColourScheme;
+        notePreview.IsOpen = dto.IsOpen;
 
         UpdateNotePreviewBrushes(notePreview);
     }
@@ -134,6 +157,17 @@ public class ManagementViewModel : BaseViewModel
         if (selectedNoteIds.Count == 0)
             return; // No delete all
 
+        // 삭제는 되돌릴 수 없으므로 한 번 확인한다.
+        MessageBoxResult answer = MessageBox.Show(
+            string.Format(Strings.Management_DeleteConfirm_Message, selectedNoteIds.Count),
+            Strings.Management_DeleteConfirm_Title,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No
+        );
+        if (answer != MessageBoxResult.Yes)
+            return;
+
         MessengerService.Publish(new MultipleNoteWindowActionMessage(selectedNoteIds, NoteWindowAction.Close));
 
         foreach (int noteId in selectedNoteIds)
@@ -159,6 +193,8 @@ public class ManagementViewModel : BaseViewModel
                     _selectedNotePreviews[notePreview.Id] = notePreview;
                 else if (!notePreview.IsSelected && _selectedNotePreviews.ContainsKey(notePreview.Id))
                     _selectedNotePreviews.Remove(notePreview.Id);
+
+                DeleteNotesCommand.RaiseCanExecuteChanged();
 
                 break;
         }
@@ -190,12 +226,16 @@ public class ManagementViewModel : BaseViewModel
 
     private void RemoveNotePreview(int noteId)
     {
-        NotePreviewModel notePreview = NotePreviews[_notePreviewIdIndexMap[noteId]];
+        if (!_notePreviewIdIndexMap.TryGetValue(noteId, out int index))
+            return;
+
+        NotePreviewModel notePreview = NotePreviews[index];
 
         notePreview.PropertyChanged -= NotePreview_PropertyChanged;
 
         NotePreviews.Remove(notePreview);
         _selectedNotePreviews.Remove(notePreview.Id);
+        DeleteNotesCommand.RaiseCanExecuteChanged();
 
         // Rebuild map not indexes will have changed
         _notePreviewIdIndexMap.Clear();

@@ -4,6 +4,8 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public partial class ColourTool : BaseTool, ITool
@@ -17,10 +19,10 @@ public partial class ColourTool : BaseTool, ITool
     public ColourTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Colour",
+            Strings.Tool_Colour,
             [
-                new ToolMenuAction("RGB to Hex", new RelayCommand(() => MenuAction(ToolActions.RgbToHex))),
-                new ToolMenuAction("Hex to RGB", new RelayCommand(() => MenuAction(ToolActions.HexToRgb)))
+                new ToolMenuAction(Strings.Tool_Colour_RgbToHex, new RelayCommand(() => MenuAction(ToolActions.RgbToHex))),
+                new ToolMenuAction(Strings.Tool_Colour_HexToRgb, new RelayCommand(() => MenuAction(ToolActions.HexToRgb)))
             ]
         );
     }
@@ -79,8 +81,11 @@ public partial class ColourTool : BaseTool, ITool
         );
     }
 
-    [GeneratedRegex(@"(?:rgb\s*)?\(?\[?(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})\)?\]?", RegexOptions.IgnoreCase)]
+    // 숫자 세 개가 단어 경계로 떨어져 있을 때만 (예전에는 "2024, 11, 06" 같은 날짜 일부도 바꿨다).
+    [GeneratedRegex(@"(?:rgb\s*)?\(?\[?(?<![\d.])(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})(?![\d.])\)?\]?", RegexOptions.IgnoreCase)]
     private static partial Regex RgbRegex();
-    [GeneratedRegex(@"#?(?<hex>[0-9a-fA-F]{6}|[0-9a-fA-F]{3})")]
+    // '#'이 붙은 3/6자리, 또는 숫자가 하나 이상 섞인 6자리 단어만 바꾼다.
+    // (예전에는 '#' 없이도 아무 3/6글자나 바꿔서 add, face, decade 같은 영어 단어가 RGB 값이 됐다.)
+    [GeneratedRegex(@"(?<![0-9A-Za-z#])(?:#(?<hex>[0-9a-fA-F]{6}|[0-9a-fA-F]{3})|(?<hex>(?=[0-9a-fA-F]*[0-9])[0-9a-fA-F]{6}))(?![0-9A-Za-z])")]
     private static partial Regex HexRegex();
 }

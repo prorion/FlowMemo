@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls.BackgroundSpellCheck;
 using FlowMemo.WpfUi.Controls.ContextMenus;
+using FlowMemo.WpfUi.Helpers;
+using FlowMemo.WpfUi.Resources;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -25,6 +27,12 @@ public partial class NoteTextBoxControl : TextBox
     private CancellationTokenSource? _checkCancellationToken;
 
     private readonly NoteTextBoxContextMenu _contextMenu = null!;
+
+    // 한글 IME로 글자를 조합하는 중인지. 조합 중에 프로그램이 텍스트를 고치면
+    // (끝에 줄바꿈 붙이기 등) 조합이 끊겨 첫 글자가 자모로 흩어질 수 있다.
+    private bool _isImeComposing;
+
+    private const int MaxDropFileBytes = 5 * 1024 * 1024;
 
     public NoteTextBoxControl() : base()
     {
@@ -51,10 +59,15 @@ public partial class NoteTextBoxControl : TextBox
         PreviewDragOver += OnPreviewDragOver;
         PreviewDrop += OnPreviewDrop;
         MouseDoubleClick += OnMouseDoubleClick;
-        MouseDown += OnMouseDown;
+        // TextBox가 MouseDown을 먼저 처리(Handled)해서 예전 MouseDown 핸들러는 세 번/네 번 클릭 때 호출되지 않았다.
+        PreviewMouseDown += OnPreviewMouseDown;
         MouseUp += OnMouseUp;
         PreviewKeyDown += OnPreviewKeyDown;
         ContextMenuOpening += OnContextMenuOpening;
+        LostKeyboardFocus += (s, e) => _isImeComposing = false;
+
+        TextCompositionManager.AddPreviewTextInputStartHandler(this, OnPreviewTextInputStart);
+        TextCompositionManager.AddPreviewTextInputHandler(this, OnPreviewTextInputCompleted);
 
         ApplySpellingSuggestionCommand = new(ApplySpellingSuggestion);
         IgnoreSpellingErrorCommand = new(IgnoreSpellingError);
@@ -162,6 +175,9 @@ public partial class NoteTextBoxControl : TextBox
         set => SetValue(TabWidthProperty, value);
     }
     public static readonly DependencyProperty TabWidthProperty = DependencyProperty.Register(nameof(TabWidth), typeof(int), typeof(NoteTextBoxControl));
+
+    // 설정에서 0이나 음수를 넣으면 0으로 나누기/PadLeft 예외로 앱이 종료됐다.
+    private int EffectiveTabWidth => Math.Clamp(TabWidth, 1, 16);
 
     // Copy and Paste
     public CopyAction CopyAction
@@ -423,17 +439,24 @@ public partial class NoteTextBoxControl : TextBox
 
     private void CopyText(bool cut = false)
     {
-        string copiedText;
+        bool useAlt = IsShiftPressed();
 
-        if (IsShiftPressed())
-            copiedText = GetTextForCopyAction(CopyAltAction, CopyAltFallbackAction, TrimTextOnAltCopy, TrimTextOnAltFallbackCopy, cut);
-        else
-            copiedText = GetTextForCopyAction(CopyAction, CopyFallbackAction, TrimTextOnCopy, TrimTextOnFallbackCopy, cut);
+        string GetText(bool removeText)
+            => useAlt
+                ? GetTextForCopyAction(CopyAltAction, CopyAltFallbackAction, TrimTextOnAltCopy, TrimTextOnAltFallbackCopy, removeText)
+                : GetTextForCopyAction(CopyAction, CopyFallbackAction, TrimTextOnCopy, TrimTextOnFallbackCopy, removeText);
 
+        string copiedText = GetText(removeText: false);
         if (string.IsNullOrEmpty(copiedText))
             return;
 
-        Clipboard.SetDataObject(copiedText);
+        // 예전에는 잘라내기가 텍스트를 먼저 지우고 클립보드에 넣어서,
+        // 클립보드가 잠겨 있으면 잘라낸 내용이 그대로 사라졌다. 이제 복사가 성공한 뒤에만 지운다.
+        if (!ClipboardHelper.TrySetText(copiedText))
+            return;
+
+        if (cut)
+            _ = GetText(removeText: true);
     }
 
     private string GetTextForCopyAction(CopyAction action, CopyFallbackAction fallbackAction, bool trim, bool fallbackTrim, bool cut)
@@ -523,18 +546,12 @@ public partial class NoteTextBoxControl : TextBox
         }
 
         // Do nothing if action is None or clipboard does not contain text.
-        if (action == PasteAction.None || !Clipboard.ContainsText())
+        if (action == PasteAction.None)
             return;
 
-        string clipboardString;
-        try
-        {
-            clipboardString = Clipboard.GetText();
-        }
-        catch
-        {
+        string? clipboardString = ClipboardHelper.GetText();
+        if (clipboardString is null)
             return;
-        }
 
         if (trimText)
             clipboardString = clipboardString.Trim();
@@ -545,7 +562,7 @@ public partial class NoteTextBoxControl : TextBox
         // Conversion indentation
         if (ConvertIndentation)
         {
-            string spaces = string.Empty.PadLeft(TabWidth, ' ');
+            string spaces = string.Empty.PadLeft(EffectiveTabWidth, ' ');
             if (TabSpaces)
                 clipboardString = clipboardString.Replace("\t", spaces);
             else
@@ -604,7 +621,8 @@ public partial class NoteTextBoxControl : TextBox
 
     private void EnforceNewLineAtEnd()
     {
-        if (!NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
+        // 한글 조합 중에 끝에 줄바꿈을 붙이면 조합이 끊길 수 있다. 조합이 끝나면 다시 호출된다.
+        if (_isImeComposing || !NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
             return;
 
         // Store caret position
@@ -625,10 +643,13 @@ public partial class NoteTextBoxControl : TextBox
 
         EnforceNewLineAtEnd();
 
-        if (!BackgroundSpellCheck || Text.Length == 0)
+        if (!BackgroundSpellCheck || Text.Length == 0 || _isImeComposing)
             return;
 
-        char lastChar = Text[^1];
+        // 예전에는 Text[^1](맨 끝 글자)을 봤는데, '끝에 빈 줄 유지'가 켜져 있으면 맨 끝은 항상 줄바꿈이라
+        // 글자를 칠 때마다 맞춤법 검사를 바로 돌렸다. 방금 입력한 글자(커서 앞)를 본다.
+        int lastIndex = Math.Min(CaretIndex, Text.Length) - 1;
+        char lastChar = lastIndex >= 0 ? Text[lastIndex] : ' ';
 
         if (!char.IsLetterOrDigit(lastChar)) // Is space, period, etc.
         {
@@ -655,13 +676,91 @@ public partial class NoteTextBoxControl : TextBox
         }
     }
 
+    private void OnPreviewTextInputStart(object sender, TextCompositionEventArgs e)
+    {
+        // IME 조합 시작. (일반 키 입력은 시작과 완료가 바로 이어서 온다.)
+        _isImeComposing = true;
+    }
+
+    private void OnPreviewTextInputCompleted(object sender, TextCompositionEventArgs e)
+    {
+        _isImeComposing = false;
+        // 조합 중에 미뤄 둔 '끝에 빈 줄 유지'를 조합 결과가 들어간 뒤에 적용한다.
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, EnforceNewLineAtEnd);
+    }
+
     private void OnPreviewDrop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] { Length: > 0 } files)
+            return;
+
+        e.Handled = true;
+
+        try
         {
-            Text = File.ReadAllText(
-                ((string[])e.Data.GetData(DataFormats.FileDrop))[0]
-            );
+            FileInfo file = new(files[0]);
+            if (!file.Exists)
+                return; // 폴더 등
+
+            if (file.Length > MaxDropFileBytes)
+            {
+                ShowDropMessage(string.Format(Strings.Error_FileTooLarge, MaxDropFileBytes / 1024 / 1024));
+                return;
+            }
+
+            string? content = DecodeTextFile(File.ReadAllBytes(file.FullName));
+            if (content is null)
+            {
+                ShowDropMessage(Strings.Error_NotTextFile);
+                return;
+            }
+
+            // 예전에는 메모 전체를 파일 내용으로 덮어써서, 실수로 파일을 끌어다 놓으면 메모가 사라졌다.
+            // 이제 놓은 위치에 넣는다 (Ctrl+Z로 되돌릴 수 있다).
+            int dropIndex = GetCharacterIndexFromPoint(e.GetPosition(this), true);
+            if (dropIndex < 0 || dropIndex > Text.Length)
+                dropIndex = CaretIndex;
+
+            Focus();
+            Select(dropIndex, 0);
+            SelectedText = content;
+            CaretIndex = dropIndex + content.Length;
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, "Drop file");
+            ShowDropMessage(string.Format(Strings.Error_OpenFile, ex.Message));
+        }
+    }
+
+    private void ShowDropMessage(string message)
+        => MessageBox.Show(Window.GetWindow(this), message, Strings.App_Name, MessageBoxButton.OK, MessageBoxImage.Information);
+
+    /// <summary>
+    /// 텍스트 파일 내용을 읽는다. BOM이 있으면 따르고, 없으면 UTF-8로 읽되
+    /// UTF-8이 아니면 한국어 Windows 기본 인코딩(CP949, 예전 메모장의 'ANSI')으로 읽는다.
+    /// 바이너리 파일이면 null.
+    /// </summary>
+    private static string? DecodeTextFile(byte[] bytes)
+    {
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            return System.Text.Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+            return System.Text.Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
+        if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+            return System.Text.Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
+
+        if (Array.IndexOf(bytes, (byte)0) >= 0)
+            return null;
+
+        try
+        {
+            return new System.Text.UTF8Encoding(false, true).GetString(bytes);
+        }
+        catch (System.Text.DecoderFallbackException)
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            return System.Text.Encoding.GetEncoding(949).GetString(bytes);
         }
     }
 
@@ -671,15 +770,21 @@ public partial class NoteTextBoxControl : TextBox
             Copy();
     }
 
-    private void OnMouseDown(object sender, MouseButtonEventArgs e)
+    private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         // Triple click to select line, quadruple click to select entire wrapped line
-        if (e.ClickCount < 3 || e.ClickCount > 4)
+        if (e.ChangedButton != MouseButton.Left || e.ClickCount < 3 || e.ClickCount > 4)
             return;
 
-        TextBox textBox = (TextBox)sender;
+        TextBox textBox = this;
 
-        int lineIndex = textBox.GetLineIndexFromCharacterIndex(textBox.CaretIndex);
+        int clickIndex = textBox.GetCharacterIndexFromPoint(e.GetPosition(textBox), true);
+        if (clickIndex < 0)
+            clickIndex = textBox.CaretIndex;
+
+        int lineIndex = textBox.GetLineIndexFromCharacterIndex(clickIndex);
+        if (lineIndex < 0)
+            return;
         int lineLength = textBox.GetLineLength(lineIndex);
 
         // If there was no new line and is not the last row, line must be wrapped.
@@ -701,6 +806,10 @@ public partial class NoteTextBoxControl : TextBox
         if (textBox.SelectedText.EndsWith(Environment.NewLine))
             textBox.SelectionLength -= Environment.NewLine.Length;
 
+        // TextBox가 이 클릭을 다시 처리하면 방금 만든 선택이 풀린다.
+        e.Handled = true;
+        Focus();
+
         OnMouseDoubleClick(sender, e);
     }
 
@@ -716,29 +825,22 @@ public partial class NoteTextBoxControl : TextBox
         {
             e.Handled = HandledTabPressed();
         }
-        else if (e.Key == Key.Return && AutoIndent)
+        else if (e.Key == Key.Return && AutoIndent && !_isImeComposing)
         {
-            // If there is selected text remove it and set caret to correct position
-            if (HasSelectedText)
-            {
-                int selectionStart = SelectionStart;
-                Text = Text.Remove(selectionStart, SelectionLength);
-                CaretIndex = selectionStart;
-            }
+            // 커서(또는 선택 영역 시작)가 있는 '실제' 줄의 앞쪽 공백을 새 줄에 이어 붙인다.
+            // - 예전에는 화면에 보이는 줄(GetLineText)을 써서, 자동 줄 바꿈으로 꺾인 줄에서는 들여쓰기가 틀렸다.
+            // - 예전에는 Text 전체를 다시 넣어서(Text = Text.Insert...) 조합 중인 글자와 부딪힐 수 있었다.
+            //   이제 커서 위치만 바꾼다 (선택 영역이 있으면 함께 바뀌고, Ctrl+Z 한 번에 되돌릴 수 있다).
+            int start = SelectionStart;
+            int lineStart = start == 0 ? 0 : Text.LastIndexOf('\n', start - 1) + 1;
+            int indentEnd = lineStart;
+            while (indentEnd < start && (Text[indentEnd] == ' ' || Text[indentEnd] == '\t'))
+                indentEnd++;
 
-            // Store caret position for positioning later
-            int caretIndex = CaretIndex;
+            string indent = Environment.NewLine + Text[lineStart..indentEnd];
 
-            // Get the current line of text, trimming any new lines
-            string line = GetLineText(GetLineIndexFromCharacterIndex(caretIndex)).TrimEnd(Environment.NewLine.ToCharArray());
-
-            // Get the whitespace from the beginning of the line and create our indent string
-            string precedingWhitespace = new([..line.TakeWhile(char.IsWhiteSpace)]);
-            string indent = Environment.NewLine + precedingWhitespace;
-
-            // Add the indent and restore caret position
-            Text = Text.Insert(caretIndex, indent);
-            CaretIndex = caretIndex + indent.Length;
+            SelectedText = indent;
+            CaretIndex = start + indent.Length;
 
             e.Handled = true;
         }
@@ -753,7 +855,7 @@ public partial class NoteTextBoxControl : TextBox
     {
         if ((!HasSelectedText || !SelectedText.Contains(Environment.NewLine)) && !IsShiftPressed() && TabSpaces)
         {
-            int spaceCount = TabWidth;
+            int spaceCount = EffectiveTabWidth;
             int caretIndex = (HasSelectedText) ? SelectionStart : CaretIndex;
 
             int lineStart = GetCharacterIndexFromLineIndex(
@@ -770,7 +872,8 @@ public partial class NoteTextBoxControl : TextBox
 
             if (!HasSelectedText)
             {
-                Text = Text.Insert(caretIndex, spaces);
+                Select(caretIndex, 0);
+                SelectedText = spaces;
                 CaretIndex = caretIndex + spaceCount;
             }
             else
@@ -795,7 +898,7 @@ public partial class NoteTextBoxControl : TextBox
                 }
                 else if (Text[charIndex] == ' ')
                 {
-                    while (charIndex >= 0 && Text[charIndex] == ' ' && tabLength < TabWidth)
+                    while (charIndex >= 0 && Text[charIndex] == ' ' && tabLength < EffectiveTabWidth)
                     {
                         tabLength++;
                         charIndex--;
@@ -804,7 +907,8 @@ public partial class NoteTextBoxControl : TextBox
 
                 if (tabLength > 0)
                 {
-                    Text = Text.Remove(caretIndex - tabLength, tabLength);
+                    Select(caretIndex - tabLength, tabLength);
+                    SelectedText = string.Empty;
                     CaretIndex = caretIndex - tabLength;
                 }
             }
@@ -833,7 +937,7 @@ public partial class NoteTextBoxControl : TextBox
             Select(selectionStart, selectionEnd - selectionStart);
 
             // Loop though each line adding or removing the indentation where required
-            string indentation = (TabSpaces) ? "".PadLeft(TabWidth, ' ') : "\t";
+            string indentation = (TabSpaces) ? "".PadLeft(EffectiveTabWidth, ' ') : "\t";
             string[] lines = SelectedText.Split(Environment.NewLine);
             for (int i = 0; i < lines.Length; i++)
             {

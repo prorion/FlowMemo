@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class SortTool : BaseTool, ITool
@@ -15,10 +17,10 @@ public class SortTool : BaseTool, ITool
     public SortTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Sort",
+            Strings.Tool_Sort,
             [
-                new ToolMenuAction("Ascending", new RelayCommand(() => MenuAction(ToolActions.SortAscending))),
-                new ToolMenuAction("Descending", new RelayCommand(() => MenuAction(ToolActions.SortDescending)))
+                new ToolMenuAction(Strings.Tool_Sort_Ascending, new RelayCommand(() => MenuAction(ToolActions.SortAscending))),
+                new ToolMenuAction(Strings.Tool_Sort_Descending, new RelayCommand(() => MenuAction(ToolActions.SortDescending)))
             ]
         );
     }

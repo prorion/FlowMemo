@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class GuidTool : BaseTool, ITool
@@ -15,10 +17,10 @@ public class GuidTool : BaseTool, ITool
     public GuidTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "GUID",
+            Strings.Tool_Guid,
             [
-                new ToolMenuAction("Version 4 - Random", new RelayCommand(() => MenuAction(ToolActions.GuidV4))),
-                new ToolMenuAction("Version 7 - Sequential", new RelayCommand(() => MenuAction(ToolActions.GuidV7)))
+                new ToolMenuAction(Strings.Tool_Guid_V4, new RelayCommand(() => MenuAction(ToolActions.GuidV4))),
+                new ToolMenuAction(Strings.Tool_Guid_V7, new RelayCommand(() => MenuAction(ToolActions.GuidV7)))
             ]
         );
     }

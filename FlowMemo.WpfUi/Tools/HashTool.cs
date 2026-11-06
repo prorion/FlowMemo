@@ -4,6 +4,7 @@ using System.Text;
 using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
+using FlowMemo.WpfUi.Resources;
 
 namespace FlowMemo.WpfUi.Tools;
 
@@ -21,7 +22,7 @@ public class HashTool : BaseTool, ITool
     public HashTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Hash",
+            Strings.Tool_Hash,
             [
                 new ToolMenuAction("SHA512", new RelayCommand(() => MenuAction(ToolActions.HashSHA512))),
                 new ToolMenuAction("SHA384", new RelayCommand(() => MenuAction(ToolActions.HashSHA384))),
@@ -41,31 +42,22 @@ public class HashTool : BaseTool, ITool
 
     private string ModifyTextCallback(string text, Enum action)
     {
-        HashAlgorithm hasher;
-        switch (action)
+        using HashAlgorithm? hasher = action switch
         {
-            case ToolActions.HashSHA512:
-                hasher = SHA512.Create();
-                break;
-            case ToolActions.HashSHA384:
-                hasher = SHA384.Create();
-                break;
-            case ToolActions.HashSHA256:
-                hasher = SHA256.Create();
-                break;
-            case ToolActions.HashSHA1:
-                hasher = SHA1.Create();
-                break;
-            case ToolActions.HashMD5:
-                hasher = MD5.Create();
-                break;
-            default:
-                return text;
-        }
+            ToolActions.HashSHA512 => SHA512.Create(),
+            ToolActions.HashSHA384 => SHA384.Create(),
+            ToolActions.HashSHA256 => SHA256.Create(),
+            ToolActions.HashSHA1 => SHA1.Create(),
+            ToolActions.HashMD5 => MD5.Create(),
+            _ => null
+        };
+        if (hasher is null)
+            return text;
 
+        // 예전에는 선택 영역(text)이 아니라 노트 전체(NoteTextBox.Text)를 해시했다.
         return Convert.ToHexString(
             hasher.ComputeHash(
-                Encoding.UTF8.GetBytes(NoteTextBox.Text)
+                Encoding.UTF8.GetBytes(text)
             )
         );
     }

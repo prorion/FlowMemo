@@ -2,6 +2,8 @@
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class GibberishTool : BaseTool, ITool
@@ -24,15 +26,15 @@ public class GibberishTool : BaseTool, ITool
     public GibberishTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "Gibberish",
+            Strings.Tool_Gibberish,
             [
-                new ToolMenuAction("Word", new RelayCommand(() => MenuAction(ToolActions.GibberishWord))),
-                new ToolMenuAction("Title", new RelayCommand(() => MenuAction(ToolActions.GibberishTitle))),
-                new ToolMenuAction("Sentence", new RelayCommand(() => MenuAction(ToolActions.GibberishSentence))),
-                new ToolMenuAction("Paragraph", new RelayCommand(() => MenuAction(ToolActions.GibberishParagraph))),
-                new ToolMenuAction("Article", new RelayCommand(() => MenuAction(ToolActions.GibberishArticle))),
+                new ToolMenuAction(Strings.Tool_Gibberish_Word, new RelayCommand(() => MenuAction(ToolActions.GibberishWord))),
+                new ToolMenuAction(Strings.Tool_Gibberish_Title, new RelayCommand(() => MenuAction(ToolActions.GibberishTitle))),
+                new ToolMenuAction(Strings.Tool_Gibberish_Sentence, new RelayCommand(() => MenuAction(ToolActions.GibberishSentence))),
+                new ToolMenuAction(Strings.Tool_Gibberish_Paragraph, new RelayCommand(() => MenuAction(ToolActions.GibberishParagraph))),
+                new ToolMenuAction(Strings.Tool_Gibberish_Article, new RelayCommand(() => MenuAction(ToolActions.GibberishArticle))),
                 new ToolMenuAction("-"),
-                new ToolMenuAction("Name", new RelayCommand(() => MenuAction(ToolActions.GibberishName)))
+                new ToolMenuAction(Strings.Tool_Gibberish_Name, new RelayCommand(() => MenuAction(ToolActions.GibberishName)))
             ]
         );
     }

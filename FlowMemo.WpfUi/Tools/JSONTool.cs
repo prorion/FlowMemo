@@ -4,6 +4,10 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using System.Text.Encodings.Web;
+
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class JsonTool : BaseTool, ITool
@@ -15,15 +19,17 @@ public class JsonTool : BaseTool, ITool
 
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
-        WriteIndented = true
+        WriteIndented = true,
+        // 기본 인코더는 한글 등 ASCII 밖의 문자를 한처럼 이스케이프한다.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     public JsonTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "JSON",
+            Strings.Tool_Json,
             [
-                new ToolMenuAction("Prettify", new RelayCommand(() => MenuAction(ToolActions.JsonPrettify)))
+                new ToolMenuAction(Strings.Tool_Json_Prettify, new RelayCommand(() => MenuAction(ToolActions.JsonPrettify)))
             ]
         );
     }

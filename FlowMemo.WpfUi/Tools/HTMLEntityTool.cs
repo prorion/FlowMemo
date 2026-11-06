@@ -4,6 +4,8 @@ using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Controls;
 
+using FlowMemo.WpfUi.Resources;
+
 namespace FlowMemo.WpfUi.Tools;
 
 public class HtmlEntityTool : BaseTool, ITool
@@ -17,10 +19,10 @@ public class HtmlEntityTool : BaseTool, ITool
     public HtmlEntityTool(NoteTextBoxControl noteTextBox) : base(noteTextBox)
     {
         InitializeMenuItem(
-            "HTML Entity",
+            Strings.Tool_HtmlEntity,
             [
-                new ToolMenuAction("Encode", new RelayCommand(() => MenuAction(ToolActions.EntityEncode))),
-                new ToolMenuAction("Decode", new RelayCommand(() => MenuAction(ToolActions.EntityDecode)))
+                new ToolMenuAction(Strings.Tool_HtmlEntity_Encode, new RelayCommand(() => MenuAction(ToolActions.EntityEncode))),
+                new ToolMenuAction(Strings.Tool_HtmlEntity_Decode, new RelayCommand(() => MenuAction(ToolActions.EntityDecode)))
             ]
         );
     }
