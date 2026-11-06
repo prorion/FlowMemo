@@ -217,7 +217,7 @@
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.17.0"
+        "ProductVersion" = "8:2.0.0"
         "Manufacturer" = "8:prorion"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://github.com/prorion/FlowMemo/issues"

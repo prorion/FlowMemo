@@ -184,9 +184,11 @@
 5. **설치·배포.**
    - `.vdproj`는 Visual Studio 확장이 있어야 빌드된다. 원본 TODO에도 "Find better installer"가 있다.
    - `dotnet publish -p:PublishSingleFile=true`로 포터블 zip을 만들고, 필요하면 Inno Setup이나 WiX를 쓴다. 모두 로컬 스크립트로 처리한다.
-6. **버전 체계.**
-   - 아직 원본 버전(1.17.0)을 쓰고 있다.
-   - 업데이트 확인은 `prorion/FlowMemo` 릴리스를 보므로, 첫 릴리스 전에 FlowMemo 자체 버전(예: 0.1.0)과 태그 규칙(`v0.1.0`)을 정해야 한다.
+6. **버전 체계. (정함)**
+   - SemVer로 **2.0.0**부터 시작한다 (원본 1.x보다 높게).
+   - 버전은 `Directory.Build.props` 한 곳에서 관리하고, MSI의 `ProductVersion`도 같이 바꾼다.
+   - 남은 일: 첫 GitHub 릴리스를 `v2.0.0` 태그로 만들어야 업데이트 확인이 동작한다(태그만으로는 안 되고 Release가 있어야 한다).
+   - 로컬에 있는 원본 태그(`v1.x`)는 푸시하지 않는다.
 7. **브랜딩.** 아이콘(`Images/icon.ico`, `assets/`)과 스크린샷이 원본 그대로다.
 8. **접근성.**
    - 설정 창 항목은 TextBlock과 컨트롤이 형제 관계일 뿐 연결돼 있지 않다.

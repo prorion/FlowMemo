@@ -17,6 +17,7 @@ FlowMemo는 [63BeetleSmurf](https://github.com/63BeetleSmurf)의 [Pinny Notes](h
 
 - 원본과 같은 **GNU General Public License v2.0**을 따릅니다. 전문은 [LICENSE.txt](LICENSE.txt)에 있습니다.
 - 원본에서 바뀐 내용과 날짜는 이 저장소의 커밋 기록과 [CHANGELOG.md](CHANGELOG.md)에 남깁니다.
+- FlowMemo의 버전은 원본(1.x)과 구분하려고 **2.0.0**부터 시작합니다.
 - 원본 개발자를 후원하고 싶다면 [Pinny Notes 저장소](https://github.com/63BeetleSmurf/PinnyNotes)를 참고하세요.
 
 

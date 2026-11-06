@@ -1,7 +1,13 @@
 # Change Log
 
 
-## FlowMemo - 미배포
+> FlowMemo는 [SemVer](https://semver.org/lang/ko/)(주.부.수)를 따르고, 원본 Pinny Notes 1.x와 구분하려고 **2.0.0**부터 시작한다.
+> 버전은 저장소 루트의 `Directory.Build.props` 한 곳에서 관리하고, 릴리스 태그는 `v2.0.0` 형식으로 단다.
+
+
+## v2.0.0 - 미배포
+
+Pinny Notes v1.17.0을 바탕으로 한 FlowMemo의 첫 버전.
 
 ### Added
 - 한국어 UI. 메뉴·설정·도구·메시지를 모두 한국어로 바꾸고, 문자열은 `FlowMemo.WpfUi/Resources/Strings.resx` 한 곳에 모았다 (다른 언어는 `Strings.<언어>.resx`로 추가).

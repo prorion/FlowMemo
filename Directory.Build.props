@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    FlowMemo 버전 (모든 프로젝트 공통, 여기 한 곳에서만 바꾼다).
+    - SemVer: 주.부.수 (호환이 깨지는 변경 / 기능 추가 / 버그 수정)
+    - 원본 Pinny Notes 1.x와 구분하려고 2.0.0부터 시작했다.
+    - GitHub 릴리스 태그는 v{Version} 형식으로 단다 (예: v2.0.0). 업데이트 확인이 이 태그를 비교한다.
+    - 설치 파일 버전은 FlowMemo.Setup/FlowMemo.Setup.vdproj의 ProductVersion도 같이 바꾼다.
+  -->
+  <PropertyGroup>
+    <Version>2.0.0</Version>
+    <Product>FlowMemo</Product>
+  </PropertyGroup>
+
+</Project>
