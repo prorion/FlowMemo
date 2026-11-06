@@ -8,7 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+    <!-- 10.0.14부터 SQLite 3.50.2+ (CVE-2025-6965 수정)를 쓴다. 10.0.3은 취약한 2.1.11 번들을 썼다. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
   </ItemGroup>
 
 </Project>
