@@ -70,7 +70,7 @@
         <Storyboard x:Key="ShowTitleBarAnimation">
             <DoubleAnimation Storyboard.TargetName="TitleBarGrid"
                              Storyboard.TargetProperty="Height" 
-                             To="40" Duration="0:0:0.2" />
+                             To="28" Duration="0:0:0.2" />
         </Storyboard>
     </Window.Resources>
 
@@ -83,11 +83,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Title Bar -->
+        <!-- Title Bar: 높이 28 (예전 40은 메모 크기에 비해 너무 두꺼웠다). 바꾸면 ShowTitleBarAnimation의 To도 같이 바꾼다. -->
         <Grid Name="TitleBarGrid"
               Grid.Column="0"
               Grid.Row="0"
-              Height="40"
+              Height="28"
               Background="{Binding Note.TitleGridBackground}"
               d:Background="#fef7b1">
 
