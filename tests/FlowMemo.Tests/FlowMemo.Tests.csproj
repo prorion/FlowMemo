@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    FlowMemo 회귀 테스트 하네스. 실행은 tests/run.ps1로 한다 (로컬 전용, CI 없음).
+    - logic: FlowMemo.dll의 실제 컨트롤·도구를 창 하나에 띄워서 검사
+    - data:  DB 생성·마이그레이션·저장소·백업을 임시 DB로 검사
+    - ui:    앱 복사본(Debug 빌드, 포터블)을 띄워 UI 자동화와 Win32로 검사
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CS8600;CS8602;CS8604;CS8618;CS8625;CS8629</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FlowMemo.WpfUi\FlowMemo.WpfUi.csproj" />
+  </ItemGroup>
+
+</Project>
