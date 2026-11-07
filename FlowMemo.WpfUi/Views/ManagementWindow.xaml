@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:FlowMemo.WpfUi.ViewModels"
         xmlns:res="clr-namespace:FlowMemo.WpfUi.Resources"
         mc:Ignorable="d"
-        Title="{x:Static res:Strings.Management_Title}"
+        Title="{Binding WindowTitle}"
         Width="620"
         Height="440"
         MinWidth="360"
@@ -15,6 +15,72 @@
         WindowStartupLocation="CenterScreen"
 
         d:DataContext="{d:DesignInstance Type=vm:ManagementViewModel}">
+
+    <Window.Resources>
+        <!-- 메모 목록에서만 / 휴지통에서만 보이는 항목.
+             툴바·메뉴 안의 버튼과 구분선은 스타일을 직접 지정하면 툴바·메뉴 모양을 잃으므로 그 스타일을 바탕으로 한다. -->
+        <Style x:Key="NotesModeOnlyButton" TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+            <Setter Property="Padding" Value="8,4" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TrashModeOnlyButton" TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TrashModeOnlyToolBarSeparator" TargetType="Separator" BasedOn="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NotesModeOnlyMenuSeparator" TargetType="Separator" BasedOn="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TrashModeOnlyMenuSeparator" TargetType="Separator" BasedOn="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NotesModeOnlyMenuItem" TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TrashModeOnlyMenuItem" TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTrashMode}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- Segoe Fluent Icons (Windows 10에서는 같은 코드의 Segoe MDL2 Assets) -->
+        <Style x:Key="ToolbarIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -26,11 +92,12 @@
         <!-- 툴바: 아이콘만 있으면 뜻을 알기 어려워 글자를 함께 둔다 -->
         <ToolBar Grid.Row="0" ToolBarTray.IsLocked="True">
 
+            <!-- 메모 목록 -->
             <Button x:Name="NewNoteButton"
+                    Style="{StaticResource NotesModeOnlyButton}"
                     ToolTip="{x:Static res:Strings.Management_NewNote}"
                     AutomationProperties.Name="{x:Static res:Strings.Management_NewNote}"
-                    Command="{Binding NewNoteCommand}"
-                    Padding="8,4">
+                    Command="{Binding NewNoteCommand}">
                 <StackPanel Orientation="Horizontal">
                     <Path Data="M 8,2 V 14 M 2,8 H 14"
                           Width="16" Height="16"
@@ -41,6 +108,72 @@
                     <TextBlock Text="{x:Static res:Strings.Management_NewNote}" Margin="6,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
+
+            <Button x:Name="DeleteButton"
+                    Style="{StaticResource NotesModeOnlyButton}"
+                    ToolTip="{x:Static res:Strings.Management_Delete_ToolTip}"
+                    ToolTipService.ShowOnDisabled="True"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_Delete}"
+                    Command="{Binding DeleteNotesCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource ToolbarIcon}" Text="&#xE74D;" />
+                    <TextBlock Text="{x:Static res:Strings.Management_Delete}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="TrashButton"
+                    Style="{StaticResource NotesModeOnlyButton}"
+                    ToolTip="{x:Static res:Strings.Management_Trash_ToolTip}"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_Trash_Name}"
+                    Command="{Binding ShowTrashCommand}">
+                <TextBlock Text="{Binding TrashButtonText}" VerticalAlignment="Center" />
+            </Button>
+
+            <!-- 휴지통 -->
+            <Button x:Name="BackToNotesButton"
+                    Style="{StaticResource TrashModeOnlyButton}"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_BackToNotes}"
+                    Command="{Binding ShowNotesCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource ToolbarIcon}" Text="&#xE72B;" />
+                    <TextBlock Text="{x:Static res:Strings.Management_BackToNotes}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <Separator Style="{StaticResource TrashModeOnlyToolBarSeparator}" />
+
+            <Button x:Name="RestoreButton"
+                    Style="{StaticResource TrashModeOnlyButton}"
+                    ToolTip="{x:Static res:Strings.Management_Restore_ToolTip}"
+                    ToolTipService.ShowOnDisabled="True"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_Restore}"
+                    Command="{Binding RestoreNotesCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource ToolbarIcon}" Text="&#xE7A7;" />
+                    <TextBlock Text="{x:Static res:Strings.Management_Restore}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="DeletePermanentlyButton"
+                    Style="{StaticResource TrashModeOnlyButton}"
+                    ToolTip="{x:Static res:Strings.Management_DeletePermanently_ToolTip}"
+                    ToolTipService.ShowOnDisabled="True"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_DeletePermanently}"
+                    Command="{Binding DeleteNotesCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource ToolbarIcon}" Text="&#xE74D;" />
+                    <TextBlock Text="{x:Static res:Strings.Management_DeletePermanently}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <Button x:Name="EmptyTrashButton"
+                    Style="{StaticResource TrashModeOnlyButton}"
+                    AutomationProperties.Name="{x:Static res:Strings.Management_EmptyTrash}"
+                    Command="{Binding EmptyTrashCommand}">
+                <TextBlock Text="{x:Static res:Strings.Management_EmptyTrash}" VerticalAlignment="Center" />
+            </Button>
+
+            <Separator />
 
             <Button x:Name="SettingsButton"
                     ToolTip="{x:Static res:Strings.Management_Settings}"
@@ -89,6 +222,10 @@
                                         <Setter Property="Opacity" Value="0.85" />
                                         <Setter Property="ToolTip" Value="{x:Static res:Strings.Management_NoteClosed}" />
                                     </DataTrigger>
+                                    <!-- 휴지통: 더블클릭은 열기가 아니라 복원 -->
+                                    <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                                        <Setter Property="ToolTip" Value="{Binding TrashToolTip}" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
@@ -118,6 +255,25 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+                    <!-- 휴지통: 며칠 뒤 완전히 지워지는지 -->
+                    <TextBlock Text="{Binding TrashInfo}"
+                               FontSize="10"
+                               Margin="6,3,0,0"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Top"
+                               IsHitTestVisible="False"
+                               Foreground="{Binding TextBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -134,18 +290,36 @@
             <ListView.ContextMenu>
                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
                                                    RelativeSource={RelativeSource Self}}">
+                    <!-- 메모 목록 -->
                     <MenuItem Header="{x:Static res:Strings.Management_NewNote}"
+                              Style="{StaticResource NotesModeOnlyMenuItem}"
                               Command="{Binding NewNoteCommand}" />
-                    <Separator />
+                    <Separator Style="{StaticResource NotesModeOnlyMenuSeparator}" />
                     <MenuItem Header="{x:Static res:Strings.Management_OpenNotes}"
+                              Style="{StaticResource NotesModeOnlyMenuItem}"
                               InputGestureText="Enter"
                               Command="{Binding OpenNotesCommand}" />
                     <MenuItem Header="{x:Static res:Strings.Management_CloseNotes}"
+                              Style="{StaticResource NotesModeOnlyMenuItem}"
                               Command="{Binding CloseNotesCommand}" />
-                    <Separator />
+                    <Separator Style="{StaticResource NotesModeOnlyMenuSeparator}" />
                     <MenuItem Header="{x:Static res:Strings.Management_DeleteNotes}"
+                              Style="{StaticResource NotesModeOnlyMenuItem}"
                               InputGestureText="Delete"
                               Command="{Binding DeleteNotesCommand}" />
+                    <!-- 휴지통 -->
+                    <MenuItem Header="{x:Static res:Strings.Management_Restore}"
+                              Style="{StaticResource TrashModeOnlyMenuItem}"
+                              InputGestureText="Enter"
+                              Command="{Binding RestoreNotesCommand}" />
+                    <MenuItem Header="{x:Static res:Strings.Management_DeletePermanently}"
+                              Style="{StaticResource TrashModeOnlyMenuItem}"
+                              InputGestureText="Delete"
+                              Command="{Binding DeleteNotesCommand}" />
+                    <Separator Style="{StaticResource TrashModeOnlyMenuSeparator}" />
+                    <MenuItem Header="{x:Static res:Strings.Management_EmptyTrash}"
+                              Style="{StaticResource TrashModeOnlyMenuItem}"
+                              Command="{Binding EmptyTrashCommand}" />
                 </ContextMenu>
             </ListView.ContextMenu>
 
@@ -157,9 +331,9 @@
 
         </ListView>
 
-        <!-- 메모가 하나도 없을 때 -->
+        <!-- 메모가 하나도 없을 때 / 휴지통이 비었을 때 -->
         <TextBlock Grid.Row="1"
-                   Text="{x:Static res:Strings.Management_Empty}"
+                   Text="{Binding EmptyText}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    TextAlignment="Center"
@@ -184,7 +358,7 @@
                    FontSize="12"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                   Text="{x:Static res:Strings.Management_Hint}" />
+                   Text="{Binding HintText}" />
 
     </Grid>
 

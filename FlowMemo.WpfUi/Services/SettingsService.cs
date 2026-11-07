@@ -1,120 +1,98 @@
 ﻿using System.ComponentModel;
+using System.Reflection;
 using System.Windows.Threading;
 
-using FlowMemo.Core.DataTransferObjects;
+using FlowMemo.Core;
 using FlowMemo.Core.Repositories;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Models;
 
 namespace FlowMemo.WpfUi.Services;
 
+/// <summary>
+/// 설정 모델 네 개를 AppSettings 키/값 테이블과 주고받는다.
+/// 키는 "구역.속성이름"이다. 설정 모델에 속성(bool·int·double·string·열거형)을 추가하면
+/// 저장과 불러오기는 따로 손대지 않아도 된다. 기본값은 모델의 초기값이다.
+/// </summary>
 public class SettingsService(SettingsRepository settingsRepository)
 {
+    public const string ApplicationSection = "Application";
+    public const string NotesSection = "Notes";
+    public const string EditorSection = "Editor";
+    public const string ToolsSection = "Tools";
+
     private readonly SettingsRepository _settingsRepository = settingsRepository;
 
     // 예전에는 앱을 정상 종료할 때만 설정을 저장해서, 강제 종료·오류·Windows 종료 때 바꾼 설정이 사라졌다.
     // 이제 설정이 바뀌면 잠시 뒤(연속 변경은 묶어서) 바로 저장한다.
     private DispatcherTimer? _autoSaveTimer;
 
-    public ApplicationSettingsModel ApplicationSettings { get; private set; } = null!;
-    public NoteSettingsModel NoteSettings { get; private set; } = null!;
-    public EditorSettingsModel EditorSettings { get; private set; } = null!;
-    public ToolSettingsModel ToolSettings { get; private set; } = null!;
+    public ApplicationSettingsModel ApplicationSettings { get; private set; } = new();
+    public NoteSettingsModel NoteSettings { get; private set; } = new();
+    public EditorSettingsModel EditorSettings { get; private set; } = new();
+    public ToolSettingsModel ToolSettings { get; private set; } = new();
 
     public async Task Load()
     {
-        SettingsDataDto settings = await _settingsRepository.GetById(1);
+        IReadOnlyDictionary<string, string> stored = await _settingsRepository.GetAll();
 
-        ApplicationSettings = new()
-        {
-            NewInstanceBehaviour = settings.NewInstanceBehaviour,
-            StartupBehaviour = settings.StartupBehaviour,
-            ShowNotifyIcon = settings.ShowTrayIcon,
-            CheckForUpdates = settings.CheckForUpdates
-        };
+        ApplicationSettings = new();
+        NoteSettings = new();
+        EditorSettings = new();
+        ToolSettings = new();
 
-        NoteSettings = new()
+        foreach ((string key, BaseModel model, PropertyInfo property) in GetSettingProperties())
         {
-            DefaultWidth = settings.DefaultNoteWidth,
-            DefaultHeight = settings.DefaultNoteHeight,
-            StartupPosition = settings.StartupPosition,
-            PinnedByDefault = settings.PinnedByDefault,
-            MinimizeMode = settings.MinimizeMode,
-            VisibilityMode = settings.VisibilityMode,
-            HideTitleBar = settings.HideTitleBar,
-            CycleColours = settings.CycleColours,
-            ColourMode = settings.ColourMode,
-            TransparencyMode = settings.TransparencyMode,
-            OpaqueWhenFocused = settings.OpaqueWhenFocused,
-            OpaqueValue = settings.OpaqueOpacity,
-            TransparentValue = settings.TransparentOpacity
-        };
+            if (!stored.TryGetValue(key, out string? text))
+                continue; // 저장된 적 없는 설정은 기본값
 
-        EditorSettings = new()
-        {
-            CheckSpelling = settings.SpellCheck,
-            NewLineAtEnd = settings.NewLineAtEnd,
-            KeepNewLineVisible = settings.KeepNewLineVisible,
-            WrapText = settings.WrapText,
-            StandardFontFamily = settings.StandardFontFamily,
-            MonoFontFamily = settings.MonoFontFamily,
-            UseMonoFont = settings.UseMonoFont,
-            AutoIndent = settings.AutoIndent,
-            UseSpacesForTab = settings.TabUsesSpaces,
-            ConvertIndentationOnPaste = settings.ConvertIndentationOnPaste,
-            TabSpacesWidth = settings.TabWidth,
-            CopyAction = settings.CopyAction,
-            TrimTextOnCopy = settings.TrimTextOnCopy,
-            CopyAltAction = settings.CopyAltAction,
-            TrimTextOnAltCopy = settings.TrimTextOnAltCopy,
-            CopyFallbackAction = settings.CopyFallbackAction,
-            TrimTextOnFallbackCopy = settings.TrimTextOnFallbackCopy,
-            CopyAltFallbackAction = settings.CopyAltFallbackAction,
-            TrimTextOnAltFallbackCopy = settings.TrimTextOnAltFallbackCopy,
-            CopyOnSelect = settings.CopyTextOnHighlight,
-            PasteAction = settings.PasteAction,
-            TrimTextOnPaste = settings.TrimTextOnPaste,
-            PasteAltAction = settings.PasteAltAction,
-            TrimTextOnAltPaste = settings.TrimTextOnAltPaste,
-            MiddleClickPaste = settings.MiddleClickPaste
-        };
+            if (SettingValueConverter.TryParse(text, property.PropertyType, out object? value))
+                property.SetValue(model, value);
+            else
+                ErrorReporter.Log(new FormatException($"설정 '{key}'의 값 '{text}'을(를) 읽을 수 없어 기본값을 씁니다."), "Settings load");
+        }
 
-        ToolSettings = new()
-        {
-            Base64ToolState = settings.Base64State,
-            BracketToolState = settings.BracketState,
-            CaseToolState = settings.CaseState,
-            ColourToolState = settings.ColourState,
-            DateTimeToolState = settings.DateTimeState,
-            GibberishToolState = settings.GibberishState,
-            GuidToolState = settings.GuidState,
-            HashToolState = settings.HashState,
-            HtmlEntityToolState = settings.HTMLEntityState,
-            IndentToolState = settings.IndentState,
-            JoinToolState = settings.JoinState,
-            JsonToolState = settings.JSONState,
-            ListToolState = settings.ListState,
-            QuoteToolState = settings.QuoteState,
-            RemoveToolState = settings.RemoveState,
-            SlashToolState = settings.SlashState,
-            SortToolState = settings.SortState,
-            SplitToolState = settings.SplitState,
-            TrimToolState = settings.TrimState,
-            UrlToolState = settings.UrlState
-        };
+        foreach (BaseModel model in GetModels().Select(m => m.Model))
+            model.IsSaved = true;
 
         EnableAutoSave();
     }
 
+    /// <summary>설정 하나하나의 DB 키, 모델, 속성.</summary>
+    public IEnumerable<(string Key, BaseModel Model, PropertyInfo Property)> GetSettingProperties()
+    {
+        foreach ((string section, BaseModel model) in GetModels())
+        {
+            foreach (PropertyInfo property in model.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (!property.CanRead || !property.CanWrite || property.Name == nameof(BaseModel.IsSaved))
+                    continue;
+                if (!SettingValueConverter.IsSupported(property.PropertyType))
+                    continue;
+
+                yield return ($"{section}.{property.Name}", model, property);
+            }
+        }
+    }
+
+    private IEnumerable<(string Section, BaseModel Model)> GetModels()
+    {
+        yield return (ApplicationSection, ApplicationSettings);
+        yield return (NotesSection, NoteSettings);
+        yield return (EditorSection, EditorSettings);
+        yield return (ToolsSection, ToolSettings);
+    }
+
     private void EnableAutoSave()
     {
-        _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
-        _autoSaveTimer.Tick += OnAutoSaveTimerTick;
+        if (_autoSaveTimer is null)
+        {
+            _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            _autoSaveTimer.Tick += OnAutoSaveTimerTick;
+        }
 
-        ApplicationSettings.PropertyChanged += OnAnySettingChanged;
-        NoteSettings.PropertyChanged += OnAnySettingChanged;
-        EditorSettings.PropertyChanged += OnAnySettingChanged;
-        ToolSettings.PropertyChanged += OnAnySettingChanged;
+        foreach (BaseModel model in GetModels().Select(m => m.Model))
+            model.PropertyChanged += OnAnySettingChanged;
     }
 
     private void OnAnySettingChanged(object? sender, PropertyChangedEventArgs e)
@@ -141,76 +119,14 @@ public class SettingsService(SettingsRepository settingsRepository)
 
     public async Task Save()
     {
-        _ = await _settingsRepository.Update(
-            new SettingsDataDto(
-                Id: 1,
-
-                StartupBehaviour: ApplicationSettings.StartupBehaviour,
-                NewInstanceBehaviour: ApplicationSettings.NewInstanceBehaviour,
-                ShowTrayIcon: ApplicationSettings.ShowNotifyIcon,
-                CheckForUpdates: ApplicationSettings.CheckForUpdates,
-
-                DefaultNoteWidth: NoteSettings.DefaultWidth,
-                DefaultNoteHeight: NoteSettings.DefaultHeight,
-                StartupPosition: NoteSettings.StartupPosition,
-                PinnedByDefault: NoteSettings.PinnedByDefault,
-                MinimizeMode: NoteSettings.MinimizeMode,
-                VisibilityMode: NoteSettings.VisibilityMode,
-                HideTitleBar: NoteSettings.HideTitleBar,
-                CycleColours: NoteSettings.CycleColours,
-                ColourMode: NoteSettings.ColourMode,
-                TransparencyMode: NoteSettings.TransparencyMode,
-                OpaqueWhenFocused: NoteSettings.OpaqueWhenFocused,
-                OpaqueOpacity: NoteSettings.OpaqueValue,
-                TransparentOpacity: NoteSettings.TransparentValue,
-
-                SpellCheck: EditorSettings.CheckSpelling,
-                NewLineAtEnd: EditorSettings.NewLineAtEnd,
-                KeepNewLineVisible: EditorSettings.KeepNewLineVisible,
-                WrapText: EditorSettings.WrapText,
-                StandardFontFamily: EditorSettings.StandardFontFamily,
-                MonoFontFamily: EditorSettings.MonoFontFamily,
-                UseMonoFont: EditorSettings.UseMonoFont,
-                AutoIndent: EditorSettings.AutoIndent,
-                TabUsesSpaces: EditorSettings.UseSpacesForTab,
-                ConvertIndentationOnPaste: EditorSettings.ConvertIndentationOnPaste,
-                TabWidth: EditorSettings.TabSpacesWidth,
-                CopyAction: EditorSettings.CopyAction,
-                TrimTextOnCopy: EditorSettings.TrimTextOnCopy,
-                CopyAltAction: EditorSettings.CopyAltAction,
-                TrimTextOnAltCopy: EditorSettings.TrimTextOnAltCopy,
-                CopyFallbackAction: EditorSettings.CopyFallbackAction,
-                TrimTextOnFallbackCopy: EditorSettings.TrimTextOnFallbackCopy,
-                CopyAltFallbackAction: EditorSettings.CopyAltFallbackAction,
-                TrimTextOnAltFallbackCopy: EditorSettings.TrimTextOnAltFallbackCopy,
-                CopyTextOnHighlight: EditorSettings.CopyOnSelect,
-                PasteAction: EditorSettings.PasteAction,
-                TrimTextOnPaste: EditorSettings.TrimTextOnPaste,
-                PasteAltAction: EditorSettings.PasteAltAction,
-                TrimTextOnAltPaste: EditorSettings.TrimTextOnAltPaste,
-                MiddleClickPaste: EditorSettings.MiddleClickPaste,
-
-                Base64State: ToolSettings.Base64ToolState,
-                BracketState: ToolSettings.BracketToolState,
-                CaseState: ToolSettings.CaseToolState,
-                ColourState: ToolSettings.ColourToolState,
-                DateTimeState: ToolSettings.DateTimeToolState,
-                GibberishState: ToolSettings.GibberishToolState,
-                GuidState: ToolSettings.GuidToolState,
-                HashState: ToolSettings.HashToolState,
-                HTMLEntityState: ToolSettings.HtmlEntityToolState,
-                IndentState: ToolSettings.IndentToolState,
-                JoinState: ToolSettings.JoinToolState,
-                JSONState: ToolSettings.JsonToolState,
-                ListState: ToolSettings.ListToolState,
-                QuoteState: ToolSettings.QuoteToolState,
-                RemoveState: ToolSettings.RemoveToolState,
-                SlashState: ToolSettings.SlashToolState,
-                SortState: ToolSettings.SortToolState,
-                SplitState: ToolSettings.SplitToolState,
-                TrimState: ToolSettings.TrimToolState,
-                UrlState: ToolSettings.UrlToolState
-            )
+        await _settingsRepository.SaveAll(
+            GetSettingProperties().Select(setting => new KeyValuePair<string, string>(
+                setting.Key,
+                SettingValueConverter.Format(setting.Property.GetValue(setting.Model)!)
+            ))
         );
+
+        foreach (BaseModel model in GetModels().Select(m => m.Model))
+            model.IsSaved = true;
     }
 }

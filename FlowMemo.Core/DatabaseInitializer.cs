@@ -7,9 +7,13 @@ namespace FlowMemo.Core;
 
 public class DatabaseInitialiser
 {
-    public const int SchemaVersion = 4;
+    public const int SchemaVersion = 5;
 
-    public static async Task Initialise(string connectionString)
+    /// <param name="migrationBackupDirectory">
+    /// 지정하면 스키마를 올리기 직전에 이 폴더에 DB 사본을 만든다.
+    /// 사본을 만들지 못하면 마이그레이션도 하지 않는다 (되돌릴 방법 없이 바꾸지 않는다).
+    /// </param>
+    public static async Task Initialise(string connectionString, string? migrationBackupDirectory = null)
     {
         using SqliteConnection connection = new(connectionString);
         connection.Open();
@@ -24,7 +28,15 @@ public class DatabaseInitialiser
         if (databaseSchemaVersion > SchemaVersion)
             throw new DatabaseVersionException(databaseSchemaVersion, SchemaVersion);
         else if (databaseSchemaVersion < SchemaVersion)
+        {
+            if (migrationBackupDirectory is not null)
+            {
+                string databasePath = new SqliteConnectionStringBuilder(connectionString).DataSource;
+                DatabaseBackup.CreateMigrationBackup(databasePath, migrationBackupDirectory, databaseSchemaVersion, DateTime.Now);
+            }
+
             await UpdateDatabase(connection, databaseSchemaVersion);
+        }
     }
 
     private static bool SchemaTableExists(SqliteConnection connection)
@@ -77,9 +89,9 @@ public class DatabaseInitialiser
                     {AppMetadataRepository.TableSchema};
                 INSERT INTO {AppMetadataRepository.TableName} DEFAULT VALUES;
 
+                -- 설정은 키가 없으면 기본값을 쓰므로 행을 미리 넣지 않는다.
                 CREATE TABLE IF NOT EXISTS {SettingsRepository.TableName}
                     {SettingsRepository.TableSchema};
-                INSERT INTO {SettingsRepository.TableName} DEFAULT VALUES;
 
                 CREATE TABLE IF NOT EXISTS {NoteRepository.TableName}
                     {NoteRepository.TableSchema};
@@ -95,12 +107,14 @@ public class DatabaseInitialiser
         Schema1To2Migration schema1To2Migration = new();
         Schema2To3Migration schema2To3Migration = new();
         Schema3To4Migration schema3To4Migration = new();
+        Schema4To5Migration schema4To5Migration = new();
 
         Dictionary<int, SchemaMigration> migrations = new()
         {
             {schema1To2Migration.TargetSchemaVersion, schema1To2Migration},
             {schema2To3Migration.TargetSchemaVersion, schema2To3Migration},
-            {schema3To4Migration.TargetSchemaVersion, schema3To4Migration}
+            {schema3To4Migration.TargetSchemaVersion, schema3To4Migration},
+            {schema4To5Migration.TargetSchemaVersion, schema4To5Migration}
         };
 
         using SqliteTransaction transaction = connection.BeginTransaction();

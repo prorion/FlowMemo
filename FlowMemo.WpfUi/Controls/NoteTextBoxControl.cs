@@ -1047,7 +1047,8 @@ public partial class NoteTextBoxControl : TextBox
 
     private void SetReadOnly(bool isReadOnly)
     {
-        IsReadOnly = isReadOnly;
+        // SetCurrentValue: 메모 창이 IsReadOnly를 Note.IsLocked에 양방향으로 묶어 두었으므로 바인딩을 지우지 않는다.
+        SetCurrentValue(IsReadOnlyProperty, isReadOnly);
     }
 
     private async void UpdateSpellCheckAsync()

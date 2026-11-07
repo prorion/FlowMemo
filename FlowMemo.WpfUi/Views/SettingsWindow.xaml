@@ -90,6 +90,32 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <!-- Data Group: DB·백업·로그 폴더 -->
+                        <GroupBox Header="{x:Static res:Strings.Settings_Group_Data}">
+                            <StackPanel>
+
+                                <!-- 창 높이가 낮으면 아래가 잘리므로 버튼 줄을 먼저 둔다 -->
+                                <Border>
+                                    <DockPanel LastChildFill="True">
+                                        <Button x:Name="OpenDataFolderButton"
+                                                DockPanel.Dock="Right"
+                                                Padding="12,4"
+                                                Content="{x:Static res:Strings.Settings_OpenDataFolder}"
+                                                Click="OpenDataFolderButton_Click" />
+                                        <TextBlock x:Name="DataFolderPathText"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,0,12,0" />
+                                    </DockPanel>
+                                </Border>
+
+                                <TextBlock FontStyle="Italic"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,8"
+                                           Text="{x:Static res:Strings.Settings_DataNotice}"/>
+
+                            </StackPanel>
+                        </GroupBox>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

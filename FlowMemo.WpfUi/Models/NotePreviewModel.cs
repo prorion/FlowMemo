@@ -1,6 +1,8 @@
 ﻿using System.Windows.Media;
 
 using FlowMemo.Core.DataTransferObjects;
+using FlowMemo.Core.Repositories;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Themes;
 
 namespace FlowMemo.WpfUi.Models;
@@ -18,7 +20,26 @@ public class NotePreviewModel : BaseModel
         ThemeColourScheme = noteDto.ThemeColourScheme;
 
         IsOpen = noteDto.IsOpen;
+
+        if (noteDto.DeletedAt is DateTime deletedAt)
+        {
+            // 휴지통: 며칠 뒤에 완전히 지워지는지 (시작할 때 30일 지난 메모를 지운다)
+            int daysLeft = (int)Math.Ceiling((deletedAt + NoteRepository.TrashRetention - DateTime.UtcNow).TotalDays);
+            IsDeleted = true;
+            TrashInfo = daysLeft > 0
+                ? string.Format(Strings.Management_TrashDaysLeft, daysLeft)
+                : Strings.Management_TrashExpiring;
+            TrashToolTip = string.Format(Strings.Management_TrashCardToolTip, deletedAt.ToLocalTime());
+        }
     }
+
+    /// <summary>휴지통에 있는 메모인지.</summary>
+    public bool IsDeleted { get; }
+
+    /// <summary>휴지통 카드에 보이는 짧은 안내 ("29일 남음").</summary>
+    public string? TrashInfo { get; }
+
+    public string? TrashToolTip { get; }
 
     public int Id { get; set => SetProperty(ref field, value); }
 

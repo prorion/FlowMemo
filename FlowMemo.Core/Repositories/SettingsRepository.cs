@@ -1,325 +1,73 @@
 ﻿using Microsoft.Data.Sqlite;
 
 using FlowMemo.Core.Configurations;
-using FlowMemo.Core.DataTransferObjects;
-using FlowMemo.Core.Enums;
 
 namespace FlowMemo.Core.Repositories;
 
+/// <summary>
+/// 설정을 키/값으로 저장한다 (스키마 v5).
+/// 예전(v4)에는 열 62개짜리 한 행이라, 설정 하나를 추가할 때마다 마이그레이션과
+/// DTO·저장소·서비스를 함께 고쳐야 했다. 이제 키가 없으면 기본값을 쓰므로 마이그레이션이 필요 없다.
+/// 키는 "구역.속성이름" (예: "Notes.TransparencyMode")이고, 값 형식은 <see cref="SettingValueConverter"/>를 따른다.
+/// </summary>
 public class SettingsRepository(DatabaseConfiguration databaseConfiguration) : BaseRepository(databaseConfiguration)
 {
-    public static readonly string TableName = "Settings";
+    public static readonly string TableName = "AppSettings";
 
-    public static readonly string TableSchema = $@"
+    public static readonly string TableSchema = @"
         (
-            Id  INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            Application_StartupBehaviour        INTEGER DEFAULT 0,
-            Application_NewInstanceBehaviour    INTEGER DEFAULT 0,
-            Application_ShowTrayIcon            INTEGER DEFAULT 1,
-            Application_CheckForUpdates         INTEGER DEFAULT 0,
-
-            Notes_DefaultWidth                  INTEGER DEFAULT 300,
-            Notes_DefaultHeight                 INTEGER DEFAULT 300,
-            Notes_StartupPosition               INTEGER DEFAULT 0,
-            Notes_PinnedByDefault               INTEGER DEFAULT 0,
-            Notes_MinimizeMode                  INTEGER DEFAULT 0,
-            Notes_VisibilityMode                INTEGER DEFAULT 0,
-            Notes_HideTitleBar                  INTEGER DEFAULT 0,
-            Notes_CycleColours                  INTEGER DEFAULT 1,
-            Notes_ColourMode                    INTEGER DEFAULT 0,
-            Notes_TransparencyMode              INTEGER DEFAULT 2,
-            Notes_OpaqueWhenFocused             INTEGER DEFAULT 1,
-            Notes_OpaqueOpacity                 REAL    DEFAULT 1.0,
-            Notes_TransparentOpacity            REAL    DEFAULT 0.8,
-
-            Editor_SpellCheck                   INTEGER DEFAULT 1,
-            Editor_AutoIndent                   INTEGER DEFAULT 1,
-            Editor_NewLineAtEnd                 INTEGER DEFAULT 1,
-            Editor_KeepNewLineVisible           INTEGER DEFAULT 1,
-            Editor_WrapText                     INTEGER DEFAULT 1,
-            Editor_StandardFontFamily           TEXT    DEFAULT 'Segoe UI',
-            Editor_MonoFontFamily               TEXT    DEFAULT 'Consolas',
-            Editor_UseMonoFont                  INTEGER DEFAULT 0,
-            Editor_TabUsesSpaces                INTEGER DEFAULT 0,
-            Editor_ConvertIndentationOnPaste    INTEGER DEFAULT 0,
-            Editor_TabWidth                     INTEGER DEFAULT 4,
-            Editor_CopyAction                   INTEGER DEFAULT 1,
-            Editor_TrimTextOnCopy               INTEGER DEFAULT 0,
-            Editor_CopyAltAction                INTEGER DEFAULT 1,
-            Editor_TrimTextOnAltCopy            INTEGER DEFAULT 1,
-            Editor_CopyFallbackAction           INTEGER DEFAULT 1,
-            Editor_TrimTextOnFallbackCopy       INTEGER DEFAULT 0,
-            Editor_CopyAltFallbackAction        INTEGER DEFAULT 2,
-            Editor_TrimTextOnAltFallbackCopy    INTEGER DEFAULT 0,
-            Editor_CopyTextOnHighlight          INTEGER DEFAULT 0,
-            Editor_PasteAction                  INTEGER DEFAULT 1,
-            Editor_TrimTextOnPaste              INTEGER DEFAULT 0,
-            Editor_PasteAltAction               INTEGER DEFAULT 1,
-            Editor_TrimTextOnAltPaste           INTEGER DEFAULT 1,
-            Editor_MiddleClickPaste             INTEGER DEFAULT 1,
-
-            Tool_Base64State                    INTEGER DEFAULT 1,
-            Tool_BracketState                   INTEGER DEFAULT 1,
-            Tool_CaseState                      INTEGER DEFAULT 1,
-            Tool_ColourState                    INTEGER DEFAULT 1,
-            Tool_DateTimeState                  INTEGER DEFAULT 1,
-            Tool_GibberishState                 INTEGER DEFAULT 1,
-            Tool_GuidState                      INTEGER DEFAULT 1,
-            Tool_HashState                      INTEGER DEFAULT 1,
-            Tool_HTMLEntityState                INTEGER DEFAULT 1,
-            Tool_IndentState                    INTEGER DEFAULT 1,
-            Tool_JoinState                      INTEGER DEFAULT 1,
-            Tool_JSONState                      INTEGER DEFAULT 1,
-            Tool_ListState                      INTEGER DEFAULT 1,
-            Tool_QuoteState                     INTEGER DEFAULT 1,
-            Tool_RemoveState                    INTEGER DEFAULT 1,
-            Tool_SlashState                     INTEGER DEFAULT 1,
-            Tool_SortState                      INTEGER DEFAULT 1,
-            Tool_SplitState                     INTEGER DEFAULT 1,
-            Tool_TrimState                      INTEGER DEFAULT 1,
-            Tool_UrlState                       INTEGER DEFAULT 1
+            Key     TEXT PRIMARY KEY NOT NULL,
+            Value   TEXT
         )
     ";
 
-    public async Task<SettingsDataDto> GetById(int id)
+    public async Task<IReadOnlyDictionary<string, string>> GetAll()
     {
+        Dictionary<string, string> settings = new(StringComparer.Ordinal);
+
         using SqliteConnection connection = new(ConnectionString);
         connection.Open();
 
         using SqliteDataReader reader = await ExecuteReader(
             connection,
             @"
-                SELECT *
-                FROM Settings
-                WHERE Id = @id;
-            ",
-            parameters: [
-                new("@id", id)
-            ]
+                SELECT Key, Value
+                FROM AppSettings
+                WHERE Value IS NOT NULL;
+            "
         );
-        if (!reader.Read())
-            throw new Exception($"Could not find settings with id: {id}.");
 
-        return new SettingsDataDto(
-            Id: GetInt(reader, "Id"),
+        while (reader.Read())
+            settings[reader.GetString(0)] = reader.GetString(1);
 
-            StartupBehaviour: GetEnum<StartupBehaviour>(reader, "Application_StartupBehaviour"),
-            NewInstanceBehaviour: GetEnum<NewInstanceBehaviour>(reader, "Application_NewInstanceBehaviour"),
-            ShowTrayIcon: GetBool(reader, "Application_ShowTrayIcon"),
-            CheckForUpdates: GetBool(reader, "Application_CheckForUpdates"),
-
-            DefaultNoteWidth: GetInt(reader, "Notes_DefaultWidth"),
-            DefaultNoteHeight: GetInt(reader, "Notes_DefaultHeight"),
-            StartupPosition: GetEnum<StartupPosition>(reader, "Notes_StartupPosition"),
-            PinnedByDefault: GetBool(reader, "Notes_PinnedByDefault"),
-            MinimizeMode: GetEnum<MinimizeMode>(reader, "Notes_MinimizeMode"),
-            VisibilityMode: GetEnum<VisibilityMode>(reader, "Notes_VisibilityMode"),
-            HideTitleBar: GetBool(reader, "Notes_HideTitleBar"),
-            CycleColours: GetBool(reader, "Notes_CycleColours"),
-            ColourMode: GetEnum<ColourMode>(reader, "Notes_ColourMode"),
-            TransparencyMode: GetEnum<TransparencyMode>(reader, "Notes_TransparencyMode"),
-            OpaqueWhenFocused: GetBool(reader, "Notes_OpaqueWhenFocused"),
-            OpaqueOpacity: GetDouble(reader, "Notes_OpaqueOpacity"),
-            TransparentOpacity: GetDouble(reader, "Notes_TransparentOpacity"),
-
-            SpellCheck: GetBool(reader, "Editor_SpellCheck"),
-            AutoIndent: GetBool(reader, "Editor_AutoIndent"),
-            NewLineAtEnd: GetBool(reader, "Editor_NewLineAtEnd"),
-            KeepNewLineVisible: GetBool(reader, "Editor_KeepNewLineVisible"),
-            WrapText: GetBool(reader, "Editor_WrapText"),
-            StandardFontFamily: GetString(reader, "Editor_StandardFontFamily"),
-            MonoFontFamily: GetString(reader, "Editor_MonoFontFamily"),
-            UseMonoFont: GetBool(reader, "Editor_UseMonoFont"),
-            TabUsesSpaces: GetBool(reader, "Editor_TabUsesSpaces"),
-            ConvertIndentationOnPaste: GetBool(reader, "Editor_ConvertIndentationOnPaste"),
-            TabWidth: GetInt(reader, "Editor_TabWidth"),
-            CopyAction: GetEnum<CopyAction>(reader, "Editor_CopyAction"),
-            TrimTextOnCopy: GetBool(reader, "Editor_TrimTextOnCopy"),
-            CopyAltAction: GetEnum<CopyAction>(reader, "Editor_CopyAltAction"),
-            TrimTextOnAltCopy: GetBool(reader, "Editor_TrimTextOnAltCopy"),
-            CopyFallbackAction: GetEnum<CopyFallbackAction>(reader, "Editor_CopyFallbackAction"),
-            TrimTextOnFallbackCopy: GetBool(reader, "Editor_TrimTextOnFallbackCopy"),
-            CopyAltFallbackAction: GetEnum<CopyFallbackAction>(reader, "Editor_CopyAltFallbackAction"),
-            TrimTextOnAltFallbackCopy: GetBool(reader, "Editor_TrimTextOnAltFallbackCopy"),
-            CopyTextOnHighlight: GetBool(reader, "Editor_CopyTextOnHighlight"),
-            PasteAction: GetEnum<PasteAction>(reader, "Editor_PasteAction"),
-            TrimTextOnPaste: GetBool(reader, "Editor_TrimTextOnPaste"),
-            PasteAltAction: GetEnum<PasteAction>(reader, "Editor_PasteAltAction"),
-            TrimTextOnAltPaste: GetBool(reader, "Editor_TrimTextOnAltPaste"),
-            MiddleClickPaste: GetBool(reader, "Editor_MiddleClickPaste"),
-
-            Base64State: GetEnum<ToolState>(reader, "Tool_Base64State"),
-            BracketState: GetEnum<ToolState>(reader, "Tool_BracketState"),
-            CaseState: GetEnum<ToolState>(reader, "Tool_CaseState"),
-            ColourState: GetEnum<ToolState>(reader, "Tool_ColourState"),
-            DateTimeState: GetEnum<ToolState>(reader, "Tool_DateTimeState"),
-            GibberishState: GetEnum<ToolState>(reader, "Tool_GibberishState"),
-            GuidState: GetEnum<ToolState>(reader, "Tool_GuidState"),
-            HashState: GetEnum<ToolState>(reader, "Tool_HashState"),
-            HTMLEntityState: GetEnum<ToolState>(reader, "Tool_HTMLEntityState"),
-            IndentState: GetEnum<ToolState>(reader, "Tool_IndentState"),
-            JoinState: GetEnum<ToolState>(reader, "Tool_JoinState"),
-            JSONState: GetEnum<ToolState>(reader, "Tool_JSONState"),
-            ListState: GetEnum<ToolState>(reader, "Tool_ListState"),
-            QuoteState: GetEnum<ToolState>(reader, "Tool_QuoteState"),
-            RemoveState: GetEnum<ToolState>(reader, "Tool_RemoveState"),
-            SlashState: GetEnum<ToolState>(reader, "Tool_SlashState"),
-            SortState: GetEnum<ToolState>(reader, "Tool_SortState"),
-            SplitState: GetEnum<ToolState>(reader, "Tool_SplitState"),
-            TrimState: GetEnum<ToolState>(reader, "Tool_TrimState"),
-            UrlState: GetEnum<ToolState>(reader, "Tool_UrlState")
-        );
+        return settings;
     }
 
-    public async Task<int> Update(SettingsDataDto settings)
+    /// <summary>주어진 키만 덮어쓴다. 모르는 키(새 버전에서 추가한 설정 등)는 지우지 않고 그대로 둔다.</summary>
+    public async Task SaveAll(IEnumerable<KeyValuePair<string, string>> settings)
     {
         using SqliteConnection connection = new(ConnectionString);
         connection.Open();
 
-        return await ExecuteNonQuery(
-            connection,
-            @"
-                UPDATE
-                    Settings
-                SET
-                    Application_StartupBehaviour = @application_StartupBehaviour,
-                    Application_NewInstanceBehaviour = @application_NewInstanceBehaviour,
-                    Application_ShowTrayIcon = @application_ShowTrayIcon,
-                    Application_CheckForUpdates = @application_CheckForUpdates,
+        using SqliteTransaction transaction = connection.BeginTransaction();
 
-                    Notes_DefaultWidth = @notes_DefaultWidth,
-                    Notes_DefaultHeight = @notes_DefaultHeight,
-                    Notes_StartupPosition = @notes_StartupPosition,
-                    Notes_PinnedByDefault = @notes_PinnedByDefault,
-                    Notes_MinimizeMode = @notes_MinimizeMode,
-                    Notes_VisibilityMode = @notes_VisibilityMode,
-                    Notes_HideTitleBar = @notes_HideTitleBar,
-                    Notes_CycleColours = @notes_CycleColours,
-                    Notes_ColourMode = @notes_ColourMode,
-                    Notes_TransparencyMode = @notes_TransparencyMode,
-                    Notes_OpaqueWhenFocused = @notes_OpaqueWhenFocused,
-                    Notes_OpaqueOpacity = @notes_OpaqueOpacity,
-                    Notes_TransparentOpacity = @notes_TransparentOpacity,
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = @"
+            INSERT INTO AppSettings (Key, Value)
+            VALUES (@key, @value)
+            ON CONFLICT (Key) DO UPDATE SET Value = excluded.Value;
+        ";
+        SqliteParameter key = command.Parameters.Add("@key", SqliteType.Text);
+        SqliteParameter value = command.Parameters.Add("@value", SqliteType.Text);
 
-                    Editor_SpellCheck = @editor_SpellCheck,
-                    Editor_AutoIndent = @editor_AutoIndent,
-                    Editor_NewLineAtEnd = @editor_NewLineAtEnd,
-                    Editor_KeepNewLineVisible = @editor_KeepNewLineVisible,
-                    Editor_WrapText = @editor_WrapText,
-                    Editor_StandardFontFamily = @editor_StandardFontFamily,
-                    Editor_MonoFontFamily = @editor_MonoFontFamily,
-                    Editor_UseMonoFont = @editor_UseMonoFont,
-                    Editor_TabUsesSpaces = @editor_TabUsesSpaces,
-                    Editor_ConvertIndentationOnPaste = @editor_ConvertIndentationOnPaste,
-                    Editor_TabWidth = @editor_TabWidth,
-                    Editor_CopyAction = @editor_CopyAction,
-                    Editor_TrimTextOnCopy = @editor_TrimTextOnCopy,
-                    Editor_CopyAltAction = @editor_CopyAltAction,
-                    Editor_TrimTextOnAltCopy = @editor_TrimTextOnAltCopy,
-                    Editor_CopyFallbackAction = @editor_CopyFallbackAction,
-                    Editor_TrimTextOnFallbackCopy = @editor_TrimTextOnFallbackCopy,
-                    Editor_CopyAltFallbackAction = @editor_CopyAltFallbackAction,
-                    Editor_TrimTextOnAltFallbackCopy = @editor_TrimTextOnAltFallbackCopy,
-                    Editor_CopyTextOnHighlight = @editor_CopyTextOnHighlight,
-                    Editor_PasteAction = @editor_PasteAction,
-                    Editor_TrimTextOnPaste = @editor_TrimTextOnPaste,
-                    Editor_PasteAltAction = @editor_PasteAltAction,
-                    Editor_TrimTextOnAltPaste = @editor_TrimTextOnAltPaste,
-                    Editor_MiddleClickPaste = @editor_MiddleClickPaste,
+        foreach (KeyValuePair<string, string> setting in settings)
+        {
+            key.Value = setting.Key;
+            value.Value = setting.Value;
+            await command.ExecuteNonQueryAsync();
+        }
 
-                    Tool_Base64State = @tool_Base64State,
-                    Tool_BracketState = @tool_BracketState,
-                    Tool_CaseState = @tool_CaseState,
-                    Tool_ColourState = @tool_ColourState,
-                    Tool_DateTimeState = @tool_DateTimeState,
-                    Tool_GibberishState = @tool_GibberishState,
-                    Tool_GuidState = @tool_GuidState,
-                    Tool_HashState = @tool_HashState,
-                    Tool_HTMLEntityState = @tool_HTMLEntityState,
-                    Tool_IndentState = @tool_IndentState,
-                    Tool_JoinState = @tool_JoinState,
-                    Tool_JSONState = @tool_JSONState,
-                    Tool_ListState = @tool_ListState,
-                    Tool_QuoteState = @tool_QuoteState,
-                    Tool_RemoveState = @tool_RemoveState,
-                    Tool_SlashState = @tool_SlashState,
-                    Tool_SortState = @tool_SortState,
-                    Tool_SplitState = @tool_SplitState,
-                    Tool_TrimState = @tool_TrimState,
-                    Tool_UrlState = @tool_UrlState
-                WHERE
-                    Id = @id;
-            ",
-            parameters: [
-                new("@application_StartupBehaviour", settings.StartupBehaviour),
-                new("@application_NewInstanceBehaviour", settings.NewInstanceBehaviour),
-                new("@application_ShowTrayIcon", settings.ShowTrayIcon),
-                new("@application_CheckForUpdates", settings.CheckForUpdates),
-
-                new("@notes_DefaultWidth", settings.DefaultNoteWidth),
-                new("@notes_DefaultHeight", settings.DefaultNoteHeight),
-                new("@notes_StartupPosition", settings.StartupPosition),
-                new("@notes_PinnedByDefault", settings.PinnedByDefault),
-                new("@notes_MinimizeMode", settings.MinimizeMode),
-                new("@notes_VisibilityMode", settings.VisibilityMode),
-                new("@notes_HideTitleBar", settings.HideTitleBar),
-                new("@notes_CycleColours", settings.CycleColours),
-                new("@notes_ColourMode", settings.ColourMode),
-                new("@notes_TransparencyMode", settings.TransparencyMode),
-                new("@notes_OpaqueWhenFocused", settings.OpaqueWhenFocused),
-                new("@notes_OpaqueOpacity", settings.OpaqueOpacity),
-                new("@notes_TransparentOpacity", settings.TransparentOpacity),
-
-                new("@editor_SpellCheck", settings.SpellCheck),
-                new("@editor_AutoIndent", settings.AutoIndent),
-                new("@editor_NewLineAtEnd", settings.NewLineAtEnd),
-                new("@editor_KeepNewLineVisible", settings.KeepNewLineVisible),
-                new("@editor_WrapText", settings.WrapText),
-                new("@editor_StandardFontFamily", settings.StandardFontFamily),
-                new("@editor_MonoFontFamily", settings.MonoFontFamily),
-                new("@editor_UseMonoFont", settings.UseMonoFont),
-                new("@editor_TabUsesSpaces", settings.TabUsesSpaces),
-                new("@editor_ConvertIndentationOnPaste", settings.ConvertIndentationOnPaste),
-                new("@editor_TabWidth", settings.TabWidth),
-                new("@editor_CopyAction", settings.CopyAction),
-                new("@editor_TrimTextOnCopy", settings.TrimTextOnCopy),
-                new("@editor_CopyAltAction", settings.CopyAltAction),
-                new("@editor_TrimTextOnAltCopy", settings.TrimTextOnAltCopy),
-                new("@editor_CopyFallbackAction", settings.CopyFallbackAction),
-                new("@editor_TrimTextOnFallbackCopy", settings.TrimTextOnFallbackCopy),
-                new("@editor_CopyAltFallbackAction", settings.CopyAltFallbackAction),
-                new("@editor_TrimTextOnAltFallbackCopy", settings.TrimTextOnAltFallbackCopy),
-                new("@editor_CopyTextOnHighlight", settings.CopyTextOnHighlight),
-                new("@editor_PasteAction", settings.PasteAction),
-                new("@editor_TrimTextOnPaste", settings.TrimTextOnPaste),
-                new("@editor_PasteAltAction", settings.PasteAltAction),
-                new("@editor_TrimTextOnAltPaste", settings.TrimTextOnAltPaste),
-                new("@editor_MiddleClickPaste", settings.MiddleClickPaste),
-
-                new("@tool_Base64State", settings.Base64State),
-                new("@tool_BracketState", settings.BracketState),
-                new("@tool_CaseState", settings.CaseState),
-                new("@tool_ColourState", settings.ColourState),
-                new("@tool_DateTimeState", settings.DateTimeState),
-                new("@tool_GibberishState", settings.GibberishState),
-                new("@tool_GuidState", settings.GuidState),
-                new("@tool_HashState", settings.HashState),
-                new("@tool_HTMLEntityState", settings.HTMLEntityState),
-                new("@tool_IndentState", settings.IndentState),
-                new("@tool_JoinState", settings.JoinState),
-                new("@tool_JSONState", settings.JSONState),
-                new("@tool_ListState", settings.ListState),
-                new("@tool_QuoteState", settings.QuoteState),
-                new("@tool_RemoveState", settings.RemoveState),
-                new("@tool_SlashState", settings.SlashState),
-                new("@tool_SortState", settings.SortState),
-                new("@tool_SplitState", settings.SplitState),
-                new("@tool_TrimState", settings.TrimState),
-                new("@tool_UrlState", settings.UrlState),
-
-                new("@id", settings.Id)
-            ]
-        );
+        transaction.Commit();
     }
 }

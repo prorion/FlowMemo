@@ -21,6 +21,24 @@ public class DatabaseConfiguration
         if (!Path.Exists(DataPath))
             Directory.CreateDirectory(DataPath);
 
-        ConnectionString = $"Data Source={Path.Combine(DataPath, "flowmemo.sqlite")}";
+        DatabasePath = Path.Combine(DataPath, DatabaseFileName);
+        ConnectionString = $"Data Source={DatabasePath}";
     }
+
+    /// <summary>지정한 폴더를 쓴다 (테스트용).</summary>
+    public DatabaseConfiguration(string dataPath)
+    {
+        DataPath = dataPath;
+        Directory.CreateDirectory(DataPath);
+
+        DatabasePath = Path.Combine(DataPath, DatabaseFileName);
+        ConnectionString = $"Data Source={DatabasePath};Pooling=False";
+    }
+
+    public const string DatabaseFileName = "flowmemo.sqlite";
+
+    public readonly string DatabasePath;
+
+    /// <summary>자동 백업 폴더.</summary>
+    public string BackupPath => Path.Combine(DataPath, DatabaseBackup.FolderName);
 }

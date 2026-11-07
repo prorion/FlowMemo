@@ -118,6 +118,27 @@ public abstract class BaseRepository
         return GetString(reader, ordinal);
     }
 
+    // 시각은 UTC ISO 8601 문자열로 저장한다 (예: 2026-11-07T12:34:56.789Z).
+    // 사람이 DB를 열어 봐도 읽을 수 있고, 문자열 정렬이 곧 시간순이다.
+    private const string UtcDateTimeFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
+
+    protected static string? FormatUtc(DateTime? value)
+        => value?.ToUniversalTime().ToString(UtcDateTimeFormat, System.Globalization.CultureInfo.InvariantCulture);
+
+    protected static DateTime? GetUtcDateTimeNullable(SqliteDataReader reader, string columnName)
+    {
+        int ordinal = reader.GetOrdinal(columnName);
+        if (reader.IsDBNull(ordinal))
+            return null;
+
+        return DateTime.TryParse(
+            reader.GetString(ordinal),
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+            out DateTime value
+        ) ? value : null;
+    }
+
     protected static T GetEnum<T>(SqliteDataReader reader, int ordinal) where T : Enum
     {
         Type enumType = typeof(T);

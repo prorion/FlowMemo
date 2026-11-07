@@ -8,8 +8,32 @@ namespace FlowMemo.WpfUi.Models;
 
 public class NoteModel : BaseModel
 {
+    /// <summary>DB에 저장하는 속성. 나머지(포커스, 투명도, 브러시 등)는 화면용이라 바뀌어도 다시 저장하지 않는다.</summary>
+    public static readonly IReadOnlySet<string> PersistedProperties = new HashSet<string>
+    {
+        nameof(Id),
+        nameof(Content),
+        nameof(X),
+        nameof(Y),
+        nameof(Width),
+        nameof(Height),
+        nameof(GravityX),
+        nameof(GravityY),
+        nameof(ThemeColourScheme),
+        nameof(IsPinned),
+        nameof(IsOpen),
+        nameof(IsLocked),
+        nameof(CreatedAt),
+        nameof(UpdatedAt)
+    };
+
+    protected override bool IsPersistedProperty(string propertyName)
+        => PersistedProperties.Contains(propertyName);
+
     public NoteModel(NoteSettingsModel NoteSettings, string themeColourScheme)
     {
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = CreatedAt;
 
         Width = NoteSettings.DefaultWidth;
         Height = NoteSettings.DefaultHeight;
@@ -39,6 +63,11 @@ public class NoteModel : BaseModel
 
         IsPinned = noteDto.IsPinned;
         IsOpen = noteDto.IsOpen;
+        IsLocked = noteDto.IsLocked;
+
+        // Content를 넣으면 UpdatedAt이 지금으로 바뀌므로, 저장된 시각은 그 뒤에 넣는다.
+        CreatedAt = noteDto.CreatedAt;
+        UpdatedAt = noteDto.UpdatedAt;
 
         TransparencyEnabled = (NoteSettings.TransparencyMode != TransparencyMode.Disabled);
     }
@@ -51,9 +80,21 @@ public class NoteModel : BaseModel
         set
         {
             if (SetProperty(ref field, value))
+            {
                 OnPropertyChanged(nameof(WindowTitle));
+                UpdatedAt = DateTime.UtcNow;
+            }
         }
     } = "";
+
+    /// <summary>만든 시각 (UTC). 스키마 v5 이전에 만든 메모는 알 수 없어서 null.</summary>
+    public DateTime? CreatedAt { get; set => SetProperty(ref field, value); }
+
+    /// <summary>내용을 마지막으로 고친 시각 (UTC). 위치·크기·색을 바꾼 것은 넣지 않는다.</summary>
+    public DateTime? UpdatedAt { get; set => SetProperty(ref field, value); }
+
+    /// <summary>잠금 (읽기 전용). 다시 실행해도 유지된다.</summary>
+    public bool IsLocked { get; set => SetProperty(ref field, value); }
 
     /// <summary>
     /// 작업 표시줄·Alt+Tab에 보이는 창 제목. 메모 첫 줄 + " - FlowMemo".
@@ -128,7 +169,12 @@ public class NoteModel : BaseModel
             ThemeColourScheme,
 
             IsPinned,
-            IsOpen
+            IsOpen,
+
+            IsLocked,
+            CreatedAt,
+            UpdatedAt,
+            DeletedAt: null // 휴지통은 관리 창에서만 다룬다 (NoteRepository.MoveToTrash)
         );
 
         return noteDto;

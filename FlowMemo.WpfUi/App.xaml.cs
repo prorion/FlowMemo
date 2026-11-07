@@ -69,9 +69,12 @@ public partial class App : Application
         DatabaseConfiguration databaseConfiguration = Services.GetRequiredService<DatabaseConfiguration>();
         ErrorReporter.Initialize(databaseConfiguration.DataPath);
 
+        // 스키마를 올리기 전·휴지통을 비우기 전에 먼저 백업한다.
+        CreateDailyBackup(databaseConfiguration);
+
         try
         {
-            await DatabaseInitialiser.Initialise(databaseConfiguration.ConnectionString);
+            await DatabaseInitialiser.Initialise(databaseConfiguration.ConnectionString, databaseConfiguration.BackupPath);
 
             _settingsService = Services.GetRequiredService<SettingsService>();
             await _settingsService.Load();
@@ -91,6 +94,9 @@ public partial class App : Application
             ShowFatalError(string.Format(Strings.Error_DatabaseOpen, ex.Message, databaseConfiguration.DataPath));
             return;
         }
+
+        await PurgeOldTrash();
+        StartBackupTimer(databaseConfiguration);
 
         _applicationSettings = _settingsService.ApplicationSettings;
         _applicationSettings.PropertyChanged += OnApplicationSettingsChanged;
@@ -139,6 +145,41 @@ public partial class App : Application
 
     public static IServiceProvider Services { get; private set; } = null!;
 
+    private DispatcherTimer? _backupTimer;
+
+    private static void CreateDailyBackup(DatabaseConfiguration databaseConfiguration)
+    {
+        try
+        {
+            DatabaseBackup.CreateDailyBackup(databaseConfiguration.DatabasePath, databaseConfiguration.BackupPath, DateTime.Now);
+        }
+        catch (Exception ex)
+        {
+            // 백업 실패로 앱을 못 쓰게 하지는 않는다. 기록만 남긴다.
+            ErrorReporter.Log(ex, "Daily backup");
+        }
+    }
+
+    /// <summary>며칠씩 켜 두는 경우에도 하루 백업이 생기도록 한 시간마다 확인한다 (오늘 백업이 있으면 아무것도 안 한다).</summary>
+    private void StartBackupTimer(DatabaseConfiguration databaseConfiguration)
+    {
+        _backupTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromHours(1) };
+        _backupTimer.Tick += (_, _) => CreateDailyBackup(databaseConfiguration);
+        _backupTimer.Start();
+    }
+
+    private static async Task PurgeOldTrash()
+    {
+        try
+        {
+            await Services.GetRequiredService<NoteRepository>().PurgeTrash(DateTime.UtcNow, NoteRepository.TrashRetention);
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, "Purge trash");
+        }
+    }
+
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<DatabaseConfiguration>();
@@ -174,6 +215,7 @@ public partial class App : Application
         // async void로 두면 첫 await 뒤의 저장이 끝나기 전에 프로세스가 끝날 수 있었다.
         SaveEverything();
 
+        _backupTimer?.Stop();
         _notifyIconService?.Dispose();
 
         if (_ownsMutex)

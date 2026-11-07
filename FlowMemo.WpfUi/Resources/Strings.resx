@@ -183,14 +183,18 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
     <value>메모 닫기</value>
   </data>
   <data name="Management_DeleteNotes" xml:space="preserve">
-    <value>메모 삭제</value>
+    <value>삭제 (휴지통으로)</value>
   </data>
-  <data name="Management_DeleteConfirm_Title" xml:space="preserve">
-    <value>메모 삭제</value>
+  <data name="Management_DeletePermanentlyConfirm_Title" xml:space="preserve">
+    <value>영구 삭제</value>
   </data>
-  <data name="Management_DeleteConfirm_Message" xml:space="preserve">
-    <value>선택한 메모 {0}개를 삭제할까요?
-삭제한 메모는 되돌릴 수 없습니다.</value>
+  <data name="Management_DeletePermanentlyConfirm_Message" xml:space="preserve">
+    <value>선택한 메모 {0}개를 완전히 지울까요?
+완전히 지운 메모는 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="Management_EmptyTrashConfirm_Message" xml:space="preserve">
+    <value>휴지통의 메모 {0}개를 모두 완전히 지울까요?
+완전히 지운 메모는 되돌릴 수 없습니다.</value>
   </data>
   <data name="Settings_Title" xml:space="preserve">
     <value>FlowMemo 설정</value>
@@ -691,7 +695,7 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
     <value>더 보기 (저장 · 색 · 메모 관리 · 설정)</value>
   </data>
   <data name="Management_Hint" xml:space="preserve">
-    <value>더블클릭 또는 Enter: 열기   ·   Delete: 삭제   ·   마우스 오른쪽 버튼: 더 많은 작업</value>
+    <value>더블클릭 또는 Enter: 열기   ·   Delete: 휴지통으로   ·   마우스 오른쪽 버튼: 더 많은 작업</value>
   </data>
   <data name="Management_Empty" xml:space="preserve">
     <value>메모가 없습니다.
@@ -736,5 +740,67 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
   </data>
   <data name="Note_Locked_ToolTip" xml:space="preserve">
     <value>잠김 (읽기 전용) · 우클릭 메뉴의 &apos;잠금&apos;을 다시 누르면 풀립니다</value>
+  </data>
+  <data name="Management_Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="Management_Delete_ToolTip" xml:space="preserve">
+    <value>선택한 메모를 휴지통으로 옮깁니다 (Delete). 휴지통의 메모는 30일 뒤 완전히 지워집니다.</value>
+  </data>
+  <data name="Management_Trash" xml:space="preserve">
+    <value>휴지통 ({0})</value>
+  </data>
+  <data name="Management_Trash_Name" xml:space="preserve">
+    <value>휴지통</value>
+  </data>
+  <data name="Management_Trash_ToolTip" xml:space="preserve">
+    <value>지운 메모 보기 (30일 동안 보관)</value>
+  </data>
+  <data name="Management_TrashTitle" xml:space="preserve">
+    <value>FlowMemo - 휴지통</value>
+  </data>
+  <data name="Management_BackToNotes" xml:space="preserve">
+    <value>메모 목록</value>
+  </data>
+  <data name="Management_Restore" xml:space="preserve">
+    <value>복원</value>
+  </data>
+  <data name="Management_Restore_ToolTip" xml:space="preserve">
+    <value>선택한 메모를 되살립니다 (Enter)</value>
+  </data>
+  <data name="Management_DeletePermanently" xml:space="preserve">
+    <value>영구 삭제</value>
+  </data>
+  <data name="Management_DeletePermanently_ToolTip" xml:space="preserve">
+    <value>선택한 메모를 완전히 지웁니다 (Delete). 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="Management_EmptyTrash" xml:space="preserve">
+    <value>휴지통 비우기</value>
+  </data>
+  <data name="Management_TrashEmpty" xml:space="preserve">
+    <value>휴지통이 비어 있습니다.
+지운 메모는 30일 동안 여기에 보관됩니다.</value>
+  </data>
+  <data name="Management_TrashDaysLeft" xml:space="preserve">
+    <value>{0}일 남음</value>
+  </data>
+  <data name="Management_TrashExpiring" xml:space="preserve">
+    <value>곧 지워짐</value>
+  </data>
+  <data name="Management_TrashCardToolTip" xml:space="preserve">
+    <value>{0:yyyy-MM-dd HH:mm}에 지운 메모 · 더블클릭하면 복원합니다</value>
+  </data>
+  <data name="Management_TrashHint" xml:space="preserve">
+    <value>Enter: 복원   ·   Delete: 영구 삭제   ·   30일이 지난 메모는 자동으로 지워집니다</value>
+  </data>
+  <data name="Settings_Group_Data" xml:space="preserve">
+    <value>데이터</value>
+  </data>
+  <data name="Settings_OpenDataFolder" xml:space="preserve">
+    <value>데이터 폴더 열기</value>
+  </data>
+  <data name="Settings_DataNotice" xml:space="preserve">
+    <value>메모 DB(flowmemo.sqlite), 자동 백업(backups 폴더, 최근 7일), 오류 기록(logs 폴더)이 있습니다.
+백업으로 되돌리려면 FlowMemo를 끝낸 뒤 백업 파일을 flowmemo.sqlite 자리에 복사하세요.</value>
   </data>
 </root>

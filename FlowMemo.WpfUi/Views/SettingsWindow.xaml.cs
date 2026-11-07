@@ -1,5 +1,9 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 
+using Microsoft.Extensions.DependencyInjection;
+
+using FlowMemo.Core.Configurations;
 using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Messages;
@@ -24,6 +28,9 @@ public partial class SettingsWindow : Window
         DataContext = viewModel;
 
         InitializeComponent();
+
+        DataFolderPathText.Text = DataFolderPath;
+        DataFolderPathText.ToolTip = DataFolderPath;
 
         Closed += Window_Closed;
     }
@@ -74,6 +81,22 @@ public partial class SettingsWindow : Window
 
     private void CloseSettingsButton_Click(object sender, RoutedEventArgs e)
         => Close();
+
+    // 끝의 \는 뗀다 ("C:\폴더\"처럼 따옴표 앞에 \가 오면 명령줄에서 따옴표로 읽힌다).
+    private static string DataFolderPath
+        => System.IO.Path.TrimEndingDirectorySeparator(App.Services.GetRequiredService<DatabaseConfiguration>().DataPath);
+
+    private void OpenDataFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{DataFolderPath}\"") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Report(ex, "Open data folder");
+        }
+    }
 
     private void Window_Closed(object? sender, EventArgs e)
     {

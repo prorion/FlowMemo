@@ -227,6 +227,7 @@
                                          x:Name="NoteTextBox"
                                          Padding="5,5,5,5"
                                          Text="{Binding Note.Content, UpdateSourceTrigger=PropertyChanged}"
+                                         IsReadOnly="{Binding Note.IsLocked, Mode=TwoWay}"
 
                                          BackgroundSpellCheck="{Binding EditorSettings.CheckSpelling}"
                                          NewLineAtEnd="{Binding EditorSettings.NewLineAtEnd}"

@@ -145,6 +145,9 @@ public class NoteTextBoxContextMenu : ContextMenu
         _selectAllMenuItem.IsEnabled = hasText;
         _clearMenuItem.IsEnabled = hasText;
 
+        // 잠금은 저장했다가 다시 실행할 때 복원되므로, 메뉴를 열 때마다 실제 상태에 맞춘다.
+        _lockedMenuItem.IsChecked = _noteTextBox.IsReadOnly;
+
         _lineCountMenuItem.Header = string.Format(Strings.TextMenu_LineCount, _noteTextBox.LineCount());
         _wordCountMenuItem.Header = string.Format(Strings.TextMenu_WordCount, _noteTextBox.WordCount());
         _charCountMenuItem.Header = string.Format(Strings.TextMenu_CharCount, _noteTextBox.CharCount());
