@@ -185,9 +185,9 @@
    - 약한 참조 메신저나 `IDisposable` 구독 토큰을 도입하면 안전하다.
 3. **서비스 로케이터.** `BaseTool`이 `App.Services`에서 설정을 꺼내 쓴다. 생성자로 주입받게 바꿔야 단위 테스트를 할 수 있다.
 4. **설정 스키마. (완료 — P0 5번으로 옮김)**
-5. **설치·배포.**
-   - `.vdproj`는 Visual Studio 확장이 있어야 빌드된다. 원본 TODO에도 "Find better installer"가 있다.
-   - `dotnet publish -p:PublishSingleFile=true`로 포터블 zip을 만들고, 필요하면 Inno Setup이나 WiX를 쓴다. 모두 로컬 스크립트로 처리한다.
+5. **설치·배포. (설치파일 완료)**
+   - `installer\build.ps1`이 .NET을 포함한 Inno Setup 설치파일을 만든다. 버전은 `Directory.Build.props`에서 읽는다.
+   - 남은 일: 예전 `FlowMemo.Setup`(`.vdproj`)은 더 쓰지 않으므로 정리한다. 널리 배포하려면 코드 서명이 필요하다.
 6. **버전 체계. (정함)**
    - SemVer로 **2.0.0**부터 시작한다 (원본 1.x보다 높게).
    - 버전은 `Directory.Build.props` 한 곳에서 관리하고, MSI의 `ProductVersion`도 같이 바꾼다.

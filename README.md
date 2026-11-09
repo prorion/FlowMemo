@@ -66,7 +66,7 @@ dotnet build FlowMemo.WpfUi -c Release
 - **데이터 위치:** 기본은 `%APPDATA%\FlowMemo\flowmemo.sqlite`입니다. 설정 → 앱 → 데이터에서 폴더를 열 수 있습니다.
 - **백업:** 같은 폴더의 `backups\`에 날짜별 백업(`flowmemo-yyyyMMdd.sqlite`, 최근 7개)과 DB 형식을 올리기 직전의 백업(`flowmemo-before-v4-….sqlite`)이 있습니다. 되돌리려면 FlowMemo를 끝내고(알림 영역 아이콘 → 끝내기) 백업 파일을 `flowmemo.sqlite` 자리에 복사합니다.
 - **포터블 모드:** `FlowMemo.exe` 옆에 빈 `portable.txt` 파일을 두면 DB를 exe 폴더에 만듭니다.
-- **설치 파일(MSI):** `FlowMemo.Setup`은 Visual Studio와 *Microsoft Visual Studio Installer Projects* 확장이 있어야 빌드됩니다.
+- **설치 파일:** `winget install JRSoftware.InnoSetup`으로 Inno Setup을 설치한 뒤 `installer\build.ps1`을 실행하면 `installer\output\FlowMemo-Setup-<버전>.exe`가 생깁니다. .NET을 함께 넣으므로 설치하는 PC에 .NET이 없어도 되고, 관리자 권한 없이 `%LocalAppData%\Programs\FlowMemo`에 설치됩니다. 코드 서명이 없어 처음 실행할 때 SmartScreen 경고가 뜨면 **추가 정보 → 실행**을 누릅니다. 업데이트와 제거를 해도 메모는 남습니다.
 
 > WPF 기반이라 Windows에서만 동작합니다.
 
