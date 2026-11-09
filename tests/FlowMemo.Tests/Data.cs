@@ -74,7 +74,7 @@ internal static class Data
         Console.WriteLine($"info  메모 {notesBefore.count}개");
 
         Run(DatabaseInitialiser.Initialise(config.ConnectionString, config.BackupPath));
-        Check("사본: 스키마 v5로 올라감", Convert.ToInt32(Scalar(config.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == 5);
+        Check("사본: 최신 스키마로 올라감", Convert.ToInt32(Scalar(config.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == DatabaseInitialiser.SchemaVersion);
         Check("사본: 메모 내용·위치·색·고정·열림이 그대로 (해시 비교)", NotesFingerprint(config.ConnectionString) == notesBefore);
 
         SettingsService settings = LoadSettings(config);
@@ -95,7 +95,7 @@ internal static class Data
                 mismatched.Add($"{key}: {expected} → {after[key]}");
         }
         Check($"사본: 설정 {before.Count}개 값이 그대로 (기본값과 다른 설정 {changedFromDefault}개)", version != 4 || (before.Count == 62 && mismatched.Count == 0), string.Join(", ", mismatched));
-        Check("사본: 마이그레이션 직전 백업", version == 5 || (Directory.Exists(config.BackupPath) && Directory.GetFiles(config.BackupPath, "flowmemo-before-v*.sqlite").Length == 1));
+        Check("사본: 마이그레이션 직전 백업", version == DatabaseInitialiser.SchemaVersion || (Directory.Exists(config.BackupPath) && Directory.GetFiles(config.BackupPath, "flowmemo-before-v*.sqlite").Length == 1));
         Check("사본: 오류 기록 없음", !File.Exists(ErrorReporter.LogFilePath), File.Exists(ErrorReporter.LogFilePath) ? File.ReadAllText(ErrorReporter.LogFilePath) : "");
     }
 
@@ -285,7 +285,7 @@ internal static class Data
         DatabaseConfiguration config = new(dir);
         Run(DatabaseInitialiser.Initialise(config.ConnectionString, config.BackupPath));
 
-        Check("새 DB: 스키마 v5", Convert.ToInt32(Scalar(config.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == 5);
+        Check("새 DB: 최신 스키마", Convert.ToInt32(Scalar(config.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == DatabaseInitialiser.SchemaVersion);
         Check("새 DB: 설정은 AppSettings 키/값 테이블 (예전 Settings 테이블 없음)",
             TableExists(config.ConnectionString, "AppSettings") && !TableExists(config.ConnectionString, "Settings"));
         HashSet<string> noteColumns = Columns(config.ConnectionString, "Notes");
@@ -302,7 +302,10 @@ internal static class Data
         DatabaseConfiguration v4 = CreateV4(dir);
         Run(DatabaseInitialiser.Initialise(v4.ConnectionString, v4.BackupPath));
 
-        Check("v4→v5: 스키마 버전 5", Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == 5);
+        Check("v4→최신: 스키마 버전", Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT Version FROM SchemaInfo WHERE Id = 0")) == DatabaseInitialiser.SchemaVersion);
+        Check("v5→v6: 기존 메모마다 서로 다른 동기화 ID",
+            Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT COUNT(DISTINCT SyncId) FROM NoteSync WHERE length(SyncId) = 32")) == Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT COUNT(*) FROM Notes"))
+            && Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT COUNT(*) FROM Notes")) > 0);
         Check("v4→v5: 예전 Settings 테이블은 지움", !TableExists(v4.ConnectionString, "Settings"));
         int migratedKeys = Convert.ToInt32(Scalar(v4.ConnectionString, "SELECT COUNT(*) FROM AppSettings"));
         Check("v4→v5: 설정 62개를 키/값으로 옮김", migratedKeys == 62, $"keys={migratedKeys}");

@@ -12,18 +12,22 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
+try {
+    if (-not (Test-Path 'node_modules\wrangler')) {
+        & npm install --no-audit --no-fund 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'npm install 실패' }
+    }
 
-if (-not (Test-Path 'node_modules\wrangler')) {
-    & npm install --no-audit --no-fund 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'npm install 실패' }
+    if (Test-Path '.wrangler') { Remove-Item -Recurse -Force '.wrangler' }
+
+    [IO.File]::WriteAllText((Join-Path $PSScriptRoot '.dev.vars'), "SERVER_SECRET=local-only-secret-not-used-in-production`nSETUP_CODE=$SetupCode`n")
+
+    & npx wrangler d1 migrations apply flowmemo-sync --local 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw '로컬 D1 초기화 실패' }
+
+    Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npx wrangler dev --local --port 8799 > .wrangler\dev.log 2>&1' -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru
 }
-
-if (Test-Path '.wrangler') { Remove-Item -Recurse -Force '.wrangler' }
-
-[IO.File]::WriteAllText((Join-Path $PSScriptRoot '.dev.vars'), "SERVER_SECRET=local-only-secret-not-used-in-production`nSETUP_CODE=$SetupCode`n")
-
-& npx wrangler d1 migrations apply flowmemo-sync --local 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { throw '로컬 D1 초기화 실패' }
-
-Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npx wrangler dev --local --port 8799 > .wrangler\dev.log 2>&1' -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru
+finally {
+    Pop-Location
+}

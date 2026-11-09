@@ -7,20 +7,22 @@
     - data  : 임시 DB로 생성·마이그레이션·저장소·백업을 검사한다.
     - ui    : 앱 복사본을 띄워 창·메뉴·관리 창·설정 창을 검사한다.
               화면에 FlowMemo 창이 잠깐씩 뜬다. 마우스·키보드 입력은 보내지 않는다.
+    - sync  : 로컬 Worker(wrangler dev)에 가상 PC 여러 대를 연결해 동기화를 검사한다.
+              Node.js가 필요하다. 실제 Cloudflare 계정은 쓰지 않는다.
 
     모두 Debug 빌드로 실행한다. Debug 빌드는 단일 인스턴스 이름이 달라서,
     평소 쓰는 FlowMemo(Release)가 켜져 있어도 서로 간섭하지 않는다.
     테스트 앱은 임시 폴더에서 포터블 모드로 실행되므로 실제 메모 DB는 건드리지 않는다.
 
 .PARAMETER Suite
-    all(기본) | logic | data | ui
+    all(기본) | logic | data | sync | ui
 
 .EXAMPLE
     .\tests\run.ps1
     .\tests\run.ps1 -Suite data
 #>
 param(
-    [ValidateSet('all', 'logic', 'data', 'ui')]
+    [ValidateSet('all', 'logic', 'data', 'sync', 'ui')]
     [string]$Suite = 'all'
 )
 
@@ -57,6 +59,35 @@ $failed = 0
 foreach ($run in $runs) {
     & $testExe $run
     if ($LASTEXITCODE -ne 0) { $failed += $LASTEXITCODE }
+}
+
+if ($Suite -in 'all', 'sync') {
+    # 로컬 Worker를 띄운다. 끝나면 이 서버 폴더에서 실행한 프로세스만 정리한다.
+    $serverDir = Join-Path $repo 'server'
+    $setupCode = 'local-setup-code-for-tests-only'
+    $syncUrl = 'http://127.0.0.1:8799'
+    try {
+        & (Join-Path $serverDir 'start-local.ps1') -SetupCode $setupCode | Out-Null
+        $ready = $false
+        foreach ($i in 1..80) {
+            Start-Sleep -Milliseconds 500
+            try {
+                Invoke-WebRequest -UseBasicParsing "$syncUrl/" -TimeoutSec 2 | Out-Null
+                $ready = $true
+                break
+            }
+            catch { }
+        }
+        if (-not $ready) { throw '로컬 Worker가 시작되지 않았습니다.' }
+
+        & $testExe sync (Join-Path $work 'sync') $syncUrl $setupCode
+        if ($LASTEXITCODE -ne 0) { $failed += $LASTEXITCODE }
+    }
+    finally {
+        Get-CimInstance Win32_Process |
+            Where-Object { $_.CommandLine -like "*wrangler*dev*8799*" -or $_.Name -eq 'workerd.exe' -and $_.CommandLine -like "*wrangler*" } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 Write-Host ''

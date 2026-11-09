@@ -7,7 +7,7 @@ namespace FlowMemo.Core;
 
 public class DatabaseInitialiser
 {
-    public const int SchemaVersion = 5;
+    public const int SchemaVersion = 6;
 
     /// <param name="migrationBackupDirectory">
     /// 지정하면 스키마를 올리기 직전에 이 폴더에 DB 사본을 만든다.
@@ -95,6 +95,8 @@ public class DatabaseInitialiser
 
                 CREATE TABLE IF NOT EXISTS {NoteRepository.TableName}
                     {NoteRepository.TableSchema};
+
+                {SyncRepository.CreateTablesSql}
             ",
             parameters: [
                 new("@schemaVersion", SchemaVersion)
@@ -108,13 +110,15 @@ public class DatabaseInitialiser
         Schema2To3Migration schema2To3Migration = new();
         Schema3To4Migration schema3To4Migration = new();
         Schema4To5Migration schema4To5Migration = new();
+        Schema5To6Migration schema5To6Migration = new();
 
         Dictionary<int, SchemaMigration> migrations = new()
         {
             {schema1To2Migration.TargetSchemaVersion, schema1To2Migration},
             {schema2To3Migration.TargetSchemaVersion, schema2To3Migration},
             {schema3To4Migration.TargetSchemaVersion, schema3To4Migration},
-            {schema4To5Migration.TargetSchemaVersion, schema4To5Migration}
+            {schema4To5Migration.TargetSchemaVersion, schema4To5Migration},
+            {schema5To6Migration.TargetSchemaVersion, schema5To6Migration}
         };
 
         using SqliteTransaction transaction = connection.BeginTransaction();

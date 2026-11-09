@@ -48,7 +48,8 @@ internal static class Program
         try
         {
             if (args[0] == "logic") Logic.Run(args[1]);
-            else if (args[0] == "data") Data.Run(args[1]);
+            else if (args[0] == "data") { Data.Run(args[1]); SyncTests.Units(); }
+            else if (args[0] == "sync") SyncTests.Run(args[1], args[2], args[3]);
             else if (args[0] == "render") Render.Run(args[1]);
             else if (args[0] == "migrate-copy") Data.MigrateCopy(args[1], args[2]);
             else if (args[0] == "ui") Ui.Run(args[1], args[2]);
