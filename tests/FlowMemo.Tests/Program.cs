@@ -503,6 +503,18 @@ internal static class Logic
         Check("자석: 옵션을 끄면 붙지 않음", SendMoving() == 3);
         settings.NoteSettings.SnapToEdges = true;
 
+        // 붙은 위치가 다음 이동의 기준이 되면 천천히 끌 때 떨어지지 않는다.
+        var followed = WindowSnapper.FollowCursor(Box(0, 0, 200, 100),
+            new FlowMemo.WpfUi.Interop.Structures.POINT { x = 500, y = 300 },
+            new FlowMemo.WpfUi.Interop.Structures.POINT { x = 20, y = 10 });
+        Check("자석: 붙어 있던 위치가 아니라 마우스 위치로 계산", followed.Left == 480 && followed.Top == 290 && followed.Right == 680 && followed.Bottom == 390);
+
+        Native.RECT moveMessage = default;
+        Native.SendMessage(snapHandle, 0x0231 /* WM_ENTERSIZEMOVE */, IntPtr.Zero, ref moveMessage);
+        int movedFromStart = SendMoving() + realWork.Left - snapStart.Left;
+        Native.SendMessage(snapHandle, 0x0232 /* WM_EXITSIZEMOVE */, IntPtr.Zero, ref moveMessage);
+        Check("자석: 끌기 중에는 Windows가 준 위치 대신 마우스 위치를 따름", Math.Abs(movedFromStart) <= 40, $"moved={movedFromStart}");
+
         hotkeyService.Dispose();
         foreach (Window openWindow in openNoteWindows.Values.ToList())
             openWindow.Close();

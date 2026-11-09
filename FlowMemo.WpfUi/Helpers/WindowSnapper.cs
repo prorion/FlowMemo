@@ -52,6 +52,20 @@ public static class WindowSnapper
         };
     }
 
+    /// <summary>창을 잡은 지점과 지금 마우스 위치로, 붙이기 전의 창 위치를 구한다. 크기는 moving을 따른다.</summary>
+    public static RECT FollowCursor(RECT moving, POINT cursor, POINT grabOffset)
+    {
+        int left = cursor.x - grabOffset.x;
+        int top = cursor.y - grabOffset.y;
+        return new RECT
+        {
+            Left = left,
+            Top = top,
+            Right = left + (moving.Right - moving.Left),
+            Bottom = top + (moving.Bottom - moving.Top)
+        };
+    }
+
     private static void Consider(ref int? best, int from, int to, int distance)
     {
         int delta = to - from;

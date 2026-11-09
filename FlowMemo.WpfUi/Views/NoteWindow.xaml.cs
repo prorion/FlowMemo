@@ -39,9 +39,12 @@ public partial class NoteWindow : Window
     private bool _restoringFromMinimize;
 
     private const int WmMoving = 0x0216;
-    private const double SnapDistanceDips = 12;
+    private const int WmEnterSizeMove = 0x0231;
+    private const int WmExitSizeMove = 0x0232;
+    private const double SnapDistanceDips = 8;
 
     private HwndSource? _hwndSource;
+    private POINT? _moveGrabOffset;
 
     #region NoteWindow
 
@@ -194,15 +197,32 @@ public partial class NoteWindow : Window
     }
 
     /// <summary>
-    /// 끌어서 옮기는 동안 Windows가 보내는 다음 위치를 화면 끝이나 다른 메모에 맞춘다.
-    /// 다음 위치는 마우스 기준으로 다시 계산되므로, 붙인 뒤에도 더 끌면 자연스럽게 떨어진다.
+    /// 끌어서 옮기는 동안 창 위치를 화면 끝이나 다른 메모에 맞춘다.
+    /// Windows가 주는 다음 위치는 붙여 놓은 위치에 이어서 계산될 수 있어, 그대로 쓰면 천천히 끌 때 떨어지지 않는다.
+    /// 그래서 항상 처음 잡은 지점과 지금 마우스 위치로 다시 구한다.
     /// </summary>
     private nint SnapWhileMoving(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
     {
+        if (msg == WmEnterSizeMove)
+        {
+            if (User32.GetCursorPos(out POINT grab) && User32.GetWindowRect(hwnd, out RECT start))
+                _moveGrabOffset = new POINT { x = grab.x - start.Left, y = grab.y - start.Top };
+            return 0;
+        }
+
+        if (msg == WmExitSizeMove)
+        {
+            _moveGrabOffset = null;
+            return 0;
+        }
+
         if (msg != WmMoving || !_noteSettings.SnapToEdges)
             return 0;
 
         RECT moving = Marshal.PtrToStructure<RECT>(lParam);
+        if (_moveGrabOffset is POINT grabOffset && User32.GetCursorPos(out POINT cursor))
+            moving = WindowSnapper.FollowCursor(moving, cursor, grabOffset);
+
         (RECT workArea, double scale) = ScreenHelper.GetWorkAreaInPixels(moving);
         RECT snapped = WindowSnapper.Snap(moving, workArea, GetOtherNoteRects(), (int)Math.Round(SnapDistanceDips * scale));
         Marshal.StructureToPtr(snapped, lParam, false);
