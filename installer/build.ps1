@@ -23,8 +23,12 @@ if (-not $version) {
     throw 'Directory.Build.props에서 버전을 읽지 못했습니다.'
 }
 
-if (Test-Path -LiteralPath $publishDir) {
-    Remove-Item -LiteralPath $publishDir -Recurse -Force
+# 이전 결과물은 남기지 않고 최신만 둔다 (옛 버전 설치파일이 쌓이지 않게).
+# 저장소 루트의 publish는 설치파일을 쓰기 전의 게시 폴더다.
+foreach ($previous in $publishDir, $outputDir, (Join-Path $repoRoot 'publish')) {
+    if (Test-Path -LiteralPath $previous) {
+        Remove-Item -LiteralPath $previous -Recurse -Force
+    }
 }
 
 Write-Host "FlowMemo $version 게시 중..."
