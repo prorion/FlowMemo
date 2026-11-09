@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,6 +8,7 @@ using FlowMemo.Core.Configurations;
 using FlowMemo.Core.Enums;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Messages;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
 using FlowMemo.WpfUi.ViewModels;
 
@@ -16,6 +18,7 @@ public partial class SettingsWindow : Window
 {
     private readonly MessengerService _messengerService;
     private readonly SettingsViewModel _viewModel;
+    private readonly GlobalHotkeyService _globalHotkeyService;
 
     private bool _positioned;
 
@@ -32,7 +35,58 @@ public partial class SettingsWindow : Window
         DataFolderPathText.Text = DataFolderPath;
         DataFolderPathText.ToolTip = DataFolderPath;
 
+        _globalHotkeyService = App.Services.GetRequiredService<GlobalHotkeyService>();
+        _globalHotkeyService.StatusChanged += OnHotkeyStatusChanged;
+        ShowHotkeyRegistrationStatus();
+
         Closed += Window_Closed;
+    }
+
+    private void ToggleNotesHotkeyBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        Key key = e.Key switch
+        {
+            Key.System => e.SystemKey,
+            Key.ImeProcessed => e.ImeProcessedKey,
+            _ => e.Key
+        };
+        ModifierKeys modifiers = Keyboard.Modifiers;
+
+        // 수정 키 없는 Tab·Esc는 평소처럼 포커스 이동과 창 닫기에 쓴다.
+        if (modifiers == ModifierKeys.None && key is Key.Tab or Key.Escape)
+            return;
+
+        e.Handled = true;
+
+        if (HotkeyGesture.IsModifierKey(key))
+            return;
+
+        if (modifiers == ModifierKeys.None && key is Key.Back or Key.Delete)
+        {
+            _viewModel.ApplicationSettings.ToggleNotesHotkey = "";
+            return;
+        }
+
+        HotkeyGesture gesture = new(modifiers, key);
+        if (gesture.IsValid)
+            _viewModel.ApplicationSettings.ToggleNotesHotkey = gesture.ToString();
+        else
+            ShowHotkeyStatus(Strings.Settings_Hotkey_NeedModifier);
+    }
+
+    private void ClearToggleNotesHotkey_Click(object sender, RoutedEventArgs e)
+        => _viewModel.ApplicationSettings.ToggleNotesHotkey = "";
+
+    private void OnHotkeyStatusChanged(object? sender, EventArgs e)
+        => ShowHotkeyRegistrationStatus();
+
+    private void ShowHotkeyRegistrationStatus()
+        => ShowHotkeyStatus(_globalHotkeyService.HasConflict ? Strings.Settings_Hotkey_InUse : null);
+
+    private void ShowHotkeyStatus(string? message)
+    {
+        ToggleNotesHotkeyStatus.Text = message ?? "";
+        ToggleNotesHotkeyStatus.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
     /// <summary>
@@ -101,6 +155,7 @@ public partial class SettingsWindow : Window
     private void Window_Closed(object? sender, EventArgs e)
     {
         _messengerService.Unsubscribe<WindowActionMessage>(OnWindowActionMessage);
+        _globalHotkeyService.StatusChanged -= OnHotkeyStatusChanged;
         _viewModel.Detach();
     }
 

@@ -439,6 +439,9 @@ internal static class Ui
 
         string[] tabNames = [.. All(sae, ControlType.TabItem).Cast<AutomationElement>().Select(e => e.Current.Name)];
         Check("설정 탭 이름", string.Join(",", tabNames) == "앱,메모,편집기,도구", string.Join(",", tabNames));
+        Check("설정 창: 트레이 전용·시작 프로그램·단축키 항목 (기본 단축키 Ctrl+Alt+H)",
+            ById(sae, "TrayOnlyCheckBox") is not null && ById(sae, "RunAtStartupCheckBox") is not null
+            && ((ValuePattern)ById(sae, "ToggleNotesHotkeyBox")!.GetCurrentPattern(ValuePattern.Pattern)).Current.Value == "Ctrl+Alt+H");
 
         int index = 0;
         foreach (AutomationElement tab in All(sae, ControlType.TabItem))

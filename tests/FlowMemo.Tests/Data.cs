@@ -294,6 +294,9 @@ internal static class Data
         Check("새 DB: 백업 폴더를 만들지 않음 (마이그레이션이 없었으므로)", !Directory.Exists(config.BackupPath));
     }
 
+    /// <summary>v5 이후에 추가한 설정. v4 DB에 없으므로 마이그레이션 표에도 없다 (키가 없으면 기본값을 쓴다).</summary>
+    private static readonly string[] SettingsAddedAfterV4 = ["Application.TrayOnly", "Application.ToggleNotesHotkey"];
+
     private static void MigrateDefaultsFromV4(string dir)
     {
         DatabaseConfiguration v4 = CreateV4(dir);
@@ -310,10 +313,10 @@ internal static class Data
         Run(DatabaseInitialiser.Initialise(fresh.ConnectionString));
         SettingsService defaults = LoadSettings(fresh);
         Dictionary<string, string> a = Snapshot(migrated), b = Snapshot(defaults);
-        Check("v4 기본값 = 새 버전 기본값 (설정 62개 모두)", a.Count == 62 && Diff(a, b) == "", Diff(a, b));
+        Check("v4 기본값 = 새 버전 기본값 (설정 62개 모두)", a.Count == 62 + SettingsAddedAfterV4.Length && Diff(a, b) == "", Diff(a, b));
 
         string[] mapKeys = [.. Schema4To5Migration.SettingsColumnMap.Select(m => m.Key).Order()];
-        string[] modelKeys = [.. defaults.GetSettingProperties().Select(s => s.Key).Order()];
+        string[] modelKeys = [.. defaults.GetSettingProperties().Select(s => s.Key).Except(SettingsAddedAfterV4).Order()];
         Check("마이그레이션 표의 키 = 설정 모델 속성 (빠지거나 이름이 다른 것 없음)", mapKeys.SequenceEqual(modelKeys),
             string.Join(",", mapKeys.Except(modelKeys).Concat(modelKeys.Except(mapKeys))));
 

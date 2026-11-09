@@ -36,6 +36,7 @@ public partial class App : Application
     private AppMetadataService? _appMetadataService;
     private SettingsService? _settingsService;
     private NotifyIconService? _notifyIconService;
+    private GlobalHotkeyService? _globalHotkeyService;
     private WindowService? _windowService;
 
     private EventWaitHandle? _eventWaitHandle;
@@ -107,6 +108,9 @@ public partial class App : Application
 
         _windowService = Services.GetRequiredService<WindowService>();
         _notifyIconService = Services.GetRequiredService<NotifyIconService>();
+        _globalHotkeyService = Services.GetRequiredService<GlobalHotkeyService>();
+
+        RefreshStartupRegistration();
 
         MessengerService messengerService = Services.GetRequiredService<MessengerService>();
         messengerService.Subscribe<ApplicationActionMessage>(OnApplicationActionMessage);
@@ -184,6 +188,18 @@ public partial class App : Application
         }
     }
 
+    private static void RefreshStartupRegistration()
+    {
+        try
+        {
+            StartupRegistration.Current.RefreshPath();
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Log(ex, "Startup registration");
+        }
+    }
+
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<DatabaseConfiguration>();
@@ -198,6 +214,7 @@ public partial class App : Application
         services.AddSingleton<MessengerService>();
         services.AddSingleton<WindowService>();
         services.AddSingleton<NotifyIconService>();
+        services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<ThemeService>();
 
         services.AddTransient<SettingsWindow>();
@@ -221,6 +238,7 @@ public partial class App : Application
 
         _backupTimer?.Stop();
         _notifyIconService?.Dispose();
+        _globalHotkeyService?.Dispose();
 
         if (_ownsMutex)
             _mutex?.ReleaseMutex();

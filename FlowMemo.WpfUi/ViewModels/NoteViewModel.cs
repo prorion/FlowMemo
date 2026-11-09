@@ -38,6 +38,7 @@ public class NoteViewModel : BaseViewModel
         NoteSettings = SettingsService.NoteSettings;
         NoteSettings.PropertyChanged += OnNoteSettingsChanged;
         EditorSettings = SettingsService.EditorSettings;
+        SettingsService.ApplicationSettings.PropertyChanged += OnApplicationSettingsChanged;
 
         _saveTimer = new DispatcherTimer
         {
@@ -121,6 +122,7 @@ public class NoteViewModel : BaseViewModel
     {
         _saveTimer.Stop();
         NoteSettings.PropertyChanged -= OnNoteSettingsChanged;
+        SettingsService.ApplicationSettings.PropertyChanged -= OnApplicationSettingsChanged;
     }
 
     public async Task<bool> CloseNote()
@@ -358,6 +360,12 @@ public class NoteViewModel : BaseViewModel
         }
     }
 
+    private void OnApplicationSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ApplicationSettingsModel.TrayOnly))
+            UpdateVisibility();
+    }
+
     private void UpdateVisibility()
     {
         if (Note.WindowHandle == 0)
@@ -365,7 +373,11 @@ public class NoteViewModel : BaseViewModel
 
         nint exStyle = User32.GetWindowLongPtrW(Note.WindowHandle, GWL.EXSTYLE);
 
-        switch (NoteSettings.VisibilityMode)
+        VisibilityMode visibilityMode = NoteSettings.VisibilityMode;
+        if (SettingsService.ApplicationSettings.TrayOnly && visibilityMode == VisibilityMode.ShowInTaskbar)
+            visibilityMode = VisibilityMode.HideInTaskbar;
+
+        switch (visibilityMode)
         {
             default:
             case VisibilityMode.ShowInTaskbar:

@@ -38,6 +38,14 @@ internal partial class User32
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool IsWindow(nint hWnd);
 
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool RegisterHotKey(nint hWnd, int id, uint fsModifiers, uint vk);
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool UnregisterHotKey(nint hWnd, int id);
+
     public delegate bool MonitorEnumProc(nint hMonitor, nint hdcMonitor, ref RECT lprcMonitor, nint dwData);
 
     // 콜백(delegate)을 받으므로 LibraryImport 대신 DllImport를 쓴다.

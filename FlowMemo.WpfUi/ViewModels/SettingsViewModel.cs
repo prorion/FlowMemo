@@ -2,6 +2,7 @@
 using System.Drawing.Text;
 
 using FlowMemo.Core.Enums;
+using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Models;
 using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
@@ -33,6 +34,25 @@ public class SettingsViewModel : BaseViewModel, INotifyPropertyChanged
 
     // 투명도 모드를 바꾸면 바로 아래 항목들이 켜지거나 꺼지도록 계산 속성으로 둔다.
     public bool IsTransparencyEnabled => NoteSettings.TransparencyMode != TransparencyMode.Disabled;
+
+    /// <summary>Windows 시작 시 자동 실행. DB가 아니라 레지스트리에 바로 저장한다.</summary>
+    public bool RunAtStartup
+    {
+        get => StartupRegistration.Current.IsEnabled;
+        set
+        {
+            try
+            {
+                StartupRegistration.Current.SetEnabled(value);
+            }
+            catch (Exception ex)
+            {
+                ErrorReporter.Report(ex, "Run at startup");
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RunAtStartup)));
+        }
+    }
 
     /// <summary>설정 창이 닫힐 때 호출해 설정 모델에 대한 구독을 해제한다.</summary>
     public void Detach()

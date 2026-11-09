@@ -15,6 +15,7 @@ using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
 using FlowMemo.Core.Repositories;
 using FlowMemo.WpfUi.Controls;
+using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
 using FlowMemo.WpfUi.Resources;
@@ -408,6 +409,103 @@ internal static class Logic
         Check("관리 창에서 닫은 메모: '열림' 표시가 꺼지고 다음 시작 때 다시 열리지 않음",
             openedBeforeClose && !closeWindows.IsNoteWindowOpen(closeNoteId) && closedMessage?.IsOpen == false && !closedInDb.IsOpen,
             $"opened={openedBeforeClose} message={closedMessage?.IsOpen} db={closedInDb.IsOpen}");
+
+        // 트레이 전용 + 모든 메모 보기/숨기기 (위 임시 DB와 WindowService를 그대로 쓴다)
+        int hideNoteId = closeRepository.Create(
+            new NoteDto(0, "숨겼다 다시 볼 메모", 240, 240, 300, 300, 1, 1, "Blue", false, true, false, null, null, null)
+        ).GetAwaiter().GetResult();
+        RunExpectingDialog(() =>
+        {
+            closeMessenger.Publish(new MultipleNoteWindowActionMessage([hideNoteId], NoteWindowAction.Open));
+            Pump();
+        });
+        var openNoteWindows = (Dictionary<int, FlowMemo.WpfUi.Views.NoteWindow>)typeof(WindowService)
+            .GetField("_openNoteWindows", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(closeWindows)!;
+        Window hideWindow = openNoteWindows[hideNoteId];
+
+        Check("트레이 전용(기본): 메모가 작업 표시줄에 나오지 않음", !hideWindow.ShowInTaskbar);
+        settings.ApplicationSettings.TrayOnly = false;
+        Pump();
+        Check("트레이 전용을 끄면 메모가 바로 작업 표시줄에 나옴", hideWindow.ShowInTaskbar);
+        settings.ApplicationSettings.TrayOnly = true;
+        Pump();
+
+        settings.ApplicationSettings.ToggleNotesHotkey = "Ctrl+Alt+Shift+F24";
+        GlobalHotkeyService hotkeyService = new(closeMessenger, settings);
+        nint hotkeyHandle = ((System.Windows.Interop.HwndSource)typeof(GlobalHotkeyService)
+            .GetField("_source", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(hotkeyService)!).Handle;
+        Check("전역 단축키가 등록됨", !hotkeyService.HasConflict);
+        Native.PostMessage(hotkeyHandle, 0x0312 /* WM_HOTKEY */, new IntPtr(1), IntPtr.Zero);
+        Pump();
+        Check("단축키: 모든 메모를 숨김", closeWindows.AreNotesHidden && !hideWindow.IsVisible);
+        Native.PostMessage(hotkeyHandle, 0x0312 /* WM_HOTKEY */, new IntPtr(1), IntPtr.Zero);
+        Pump();
+        Check("단축키를 다시 누르면 모두 보임", !closeWindows.AreNotesHidden && hideWindow.IsVisible);
+
+        closeWindows.ToggleNotesVisibility();
+        Pump();
+        RunExpectingDialog(() =>
+        {
+            closeMessenger.Publish(new OpenNoteWindowMessage());
+            Pump();
+        });
+        Check("숨긴 상태에서 새 메모를 열면 모두 다시 보임", !closeWindows.AreNotesHidden && hideWindow.IsVisible);
+
+        closeWindows.ToggleNotesVisibility();
+        Pump();
+        closeMessenger.Publish(new WindowActionMessage(WindowAction.Activate));
+        Pump();
+        Check("숨긴 상태에서 트레이 아이콘을 누르면 모두 다시 보임", !closeWindows.AreNotesHidden && hideWindow.IsVisible);
+
+        hotkeyService.Dispose();
+        foreach (Window openWindow in openNoteWindows.Values.ToList())
+            openWindow.Close();
+        Pump();
+
+        // 단축키 형식
+        Check("단축키 형식: 읽고 쓰기",
+            HotkeyGesture.TryParse("Ctrl+Alt+H", out HotkeyGesture parsedHotkey)
+            && parsedHotkey.Modifiers == (ModifierKeys.Control | ModifierKeys.Alt) && parsedHotkey.Key == Key.H && parsedHotkey.ToString() == "Ctrl+Alt+H");
+        Check("단축키 형식: 숫자 키와 Win 키",
+            HotkeyGesture.TryParse("Win+Shift+1", out HotkeyGesture digitHotkey) && digitHotkey.Key == Key.D1 && digitHotkey.ToString() == "Shift+Win+1");
+        Check("단축키 형식: 수정 키가 없거나 잘못된 값은 거부",
+            new[] { "H", "Ctrl", "Ctrl+Shift", "Ctrl+12", "Foo+H", "", null }.All(text => !HotkeyGesture.TryParse(text, out _)));
+
+        // 시작 프로그램 등록: 실제 Run 키 대신 테스트용 키에 쓴다
+        const string startupTestRoot = @"Software\FlowMemoTests";
+        string startupTestKey = startupTestRoot + @"\Run";
+        try
+        {
+            StartupRegistration registration = new("FlowMemo-Test", @"C:\앱 폴더\FlowMemo.exe", startupTestKey);
+            string? StoredCommand()
+            {
+                using Microsoft.Win32.RegistryKey? key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(startupTestKey);
+                return key?.GetValue("FlowMemo-Test") as string;
+            }
+
+            bool offAtFirst = !registration.IsEnabled;
+            registration.SetEnabled(true);
+            Check("시작 프로그램 등록: 켜면 따옴표로 감싼 경로를 저장", offAtFirst && registration.IsEnabled && StoredCommand() == "\"C:\\앱 폴더\\FlowMemo.exe\"", StoredCommand() ?? "null");
+
+            new StartupRegistration("FlowMemo-Test", @"D:\옮긴 곳\FlowMemo.exe", startupTestKey).RefreshPath();
+            Check("시작 프로그램 등록: 실행 파일을 옮기면 경로를 고침", StoredCommand() == "\"D:\\옮긴 곳\\FlowMemo.exe\"", StoredCommand() ?? "null");
+
+            registration.SetEnabled(false);
+            registration.RefreshPath();
+            Check("시작 프로그램 등록: 끄면 지우고, 꺼진 상태에서는 경로 갱신이 다시 만들지 않음", !registration.IsEnabled && StoredCommand() is null);
+        }
+        finally
+        {
+            Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(startupTestRoot, throwOnMissingSubKey: false);
+        }
+
+        // 트레이 아이콘과 트레이 전용은 함께 움직인다 (둘 다 없으면 앱을 열 방법이 없다)
+        ApplicationSettingsModel trayModel = new();
+        bool trayOnlyByDefault = trayModel.TrayOnly && trayModel.ShowNotifyIcon;
+        trayModel.ShowNotifyIcon = false;
+        bool iconOffClearsTrayOnly = !trayModel.TrayOnly;
+        trayModel.TrayOnly = true;
+        Check("트레이 아이콘을 끄면 트레이 전용도 꺼지고, 트레이 전용을 켜면 아이콘도 켜짐", trayOnlyByDefault && iconOffClearsTrayOnly && trayModel.ShowNotifyIcon);
 
         // 우클릭 메뉴 그림
         try

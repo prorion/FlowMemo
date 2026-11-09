@@ -14,14 +14,18 @@ public class NotifyIconService : IDisposable
 {
     private readonly MessengerService _messengerService;
     private readonly ApplicationSettingsModel _applicationSettings;
+    private readonly WindowService _windowService;
 
     private TaskbarIcon? _notifyIcon;
+    private MenuItem? _toggleNotesItem;
 
     private bool _disposed;
 
-    public NotifyIconService(MessengerService messengerService, SettingsService settingsService)
+    public NotifyIconService(MessengerService messengerService, SettingsService settingsService, WindowService windowService)
     {
         _messengerService = messengerService;
+        _windowService = windowService;
+        _windowService.NotesVisibilityChanged += OnNotesVisibilityChanged;
 
         _applicationSettings = settingsService.ApplicationSettings;
         _applicationSettings.PropertyChanged += OnApplicationSettingsChanged;
@@ -36,6 +40,7 @@ public class NotifyIconService : IDisposable
             return;
 
         _applicationSettings.PropertyChanged -= OnApplicationSettingsChanged;
+        _windowService.NotesVisibilityChanged -= OnNotesVisibilityChanged;
 
         DisposeNotifyIcon();
 
@@ -76,6 +81,10 @@ public class NotifyIconService : IDisposable
         };
         newNoteItem.Click += NewNote_Click;
 
+        _toggleNotesItem = new();
+        _toggleNotesItem.Click += ToggleNotes_Click;
+        UpdateToggleNotesItem();
+
         MenuItem managementWindowItem = new()
         {
             Header = Strings.Tray_Management
@@ -96,6 +105,7 @@ public class NotifyIconService : IDisposable
 
         ContextMenu contextMenu = new();
         contextMenu.Items.Add(newNoteItem);
+        contextMenu.Items.Add(_toggleNotesItem);
         contextMenu.Items.Add(managementWindowItem);
         contextMenu.Items.Add(new Separator());
         contextMenu.Items.Add(settingsItem);
@@ -117,6 +127,21 @@ public class NotifyIconService : IDisposable
 
         _notifyIcon.Dispose();
         _notifyIcon = null;
+        _toggleNotesItem = null;
+    }
+
+    private void OnNotesVisibilityChanged(object? sender, EventArgs e)
+        => UpdateToggleNotesItem();
+
+    private void UpdateToggleNotesItem()
+    {
+        if (_toggleNotesItem is not null)
+            _toggleNotesItem.Header = _windowService.AreNotesHidden ? Strings.Tray_ShowAllNotes : Strings.Tray_HideAllNotes;
+    }
+
+    private void ToggleNotes_Click(object? sender, EventArgs e)
+    {
+        _messengerService.Publish(new ApplicationActionMessage(ApplicationAction.ToggleNotesVisibility));
     }
 
     private void NotifyIcon_TrayMouseLeftButtonDown(object? sender, RoutedEventArgs e)

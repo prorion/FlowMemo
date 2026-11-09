@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel;
+using System.Windows;
 using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
 using FlowMemo.Core.Repositories;
@@ -48,6 +50,70 @@ public class WindowService
         _messengerService.Subscribe<OpenSettingsWindowMessage>(OnOpenSettingsWindowMessage);
 
         _messengerService.Subscribe<OpenManagementWindowMessage>(OnOpenManagementWindowMessage);
+        _messengerService.Subscribe<WindowActionMessage>(OnWindowActionMessage);
+
+        _settingsService.ApplicationSettings.PropertyChanged += OnApplicationSettingsChanged;
+    }
+
+    /// <summary>모든 메모를 숨긴 상태인지. 다시 실행하면 메모는 보이는 상태로 시작한다.</summary>
+    public bool AreNotesHidden { get; private set; }
+
+    /// <summary>모든 메모를 숨기거나 다시 보일 때 (트레이 메뉴 글자를 바꾼다).</summary>
+    public event EventHandler? NotesVisibilityChanged;
+
+    public void ToggleNotesVisibility()
+    {
+        if (AreNotesHidden)
+            ShowAllNotes();
+        else
+            HideAllNotes();
+    }
+
+    private void HideAllNotes()
+    {
+        if (_openNoteWindows.Count == 0)
+            return;
+
+        foreach (NoteWindow window in _openNoteWindows.Values)
+            window.Hide();
+
+        SetNotesHidden(true);
+    }
+
+    private void ShowAllNotes()
+    {
+        foreach (NoteWindow window in _openNoteWindows.Values)
+            window.Show();
+
+        SetNotesHidden(false);
+    }
+
+    private void SetNotesHidden(bool hidden)
+    {
+        AreNotesHidden = hidden;
+        NotesVisibilityChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnWindowActionMessage(WindowActionMessage message)
+    {
+        // 트레이 아이콘을 누르면 숨긴 메모도 다시 보여 준다.
+        if (message.Action == WindowAction.Activate && AreNotesHidden)
+            ShowAllNotes();
+    }
+
+    private void OnApplicationSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ApplicationSettingsModel.TrayOnly))
+            return;
+
+        ApplyTaskbarSetting(_managementWindow);
+        ApplyTaskbarSetting(_settingsWindow);
+    }
+
+    private void ApplyTaskbarSetting(Window? window)
+    {
+        if (window is not null)
+            window.ShowInTaskbar = !_settingsService.ApplicationSettings.TrayOnly;
     }
 
     /// <summary>지금 창이 열려 있는 메모인지. (DB의 IsOpen은 '다음 시작 때 다시 열지'라서 실제와 다를 수 있다.)</summary>
@@ -80,6 +146,9 @@ public class WindowService
                 break;
             case ApplicationAction.NewInstance:
                 DoNewInstanceAction();
+                break;
+            case ApplicationAction.ToggleNotesVisibility:
+                ToggleNotesVisibility();
                 break;
         }
     }
@@ -164,6 +233,7 @@ public class WindowService
         {
             _settingsWindow = _serviceProvider.GetRequiredService<SettingsWindow>();
             _settingsWindow.Closed += (s, e) => _settingsWindow = null;
+            ApplyTaskbarSetting(_settingsWindow);
         }
 
         _settingsWindow.SetOwnerAndPosition(message.Owner);
@@ -184,6 +254,10 @@ public class WindowService
 
     private async Task OpenNoteWindow(int? noteId = null, NoteModel? parentNote = null, nint? managementWindowHandle = null)
     {
+        // 숨긴 상태에서 메모를 열면 새 메모만 덩그러니 보이지 않게 모두 다시 보여 준다.
+        if (AreNotesHidden)
+            ShowAllNotes();
+
         if (noteId is not null && _openNoteWindows.TryGetValue((int)noteId, out NoteWindow? existingWindow))
         {
             existingWindow.ActivateNote();
@@ -222,6 +296,7 @@ public class WindowService
             _managementWindow = _serviceProvider.GetRequiredService<ManagementWindow>();
             // 예전 코드는 여기서 _settingsWindow를 비웠다 (원본 Pinny Notes의 오타).
             _managementWindow.Closed += (s, e) => _managementWindow = null;
+            ApplyTaskbarSetting(_managementWindow);
         }
 
         if (!_managementWindow.IsVisible)

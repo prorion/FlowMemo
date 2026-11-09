@@ -80,6 +80,33 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
   <data name="Tray_Settings" xml:space="preserve">
     <value>설정</value>
   </data>
+  <data name="Tray_HideAllNotes" xml:space="preserve">
+    <value>모든 메모 숨기기</value>
+  </data>
+  <data name="Tray_ShowAllNotes" xml:space="preserve">
+    <value>모든 메모 보기</value>
+  </data>
+  <data name="Settings_TrayOnly" xml:space="preserve">
+    <value>트레이로만 실행 (작업 표시줄에 표시 안 함)</value>
+  </data>
+  <data name="Settings_RunAtStartup" xml:space="preserve">
+    <value>Windows 시작할 때 자동 실행</value>
+  </data>
+  <data name="Settings_ToggleNotesHotkey" xml:space="preserve">
+    <value>모든 메모 보기/숨기기 단축키</value>
+  </data>
+  <data name="Settings_Hotkey_ToolTip" xml:space="preserve">
+    <value>여기를 누른 뒤 쓰고 싶은 키 조합을 누르세요. Delete를 누르면 지웁니다.</value>
+  </data>
+  <data name="Settings_Hotkey_Clear" xml:space="preserve">
+    <value>지우기</value>
+  </data>
+  <data name="Settings_Hotkey_InUse" xml:space="preserve">
+    <value>다른 프로그램이 이 단축키를 쓰고 있어 등록하지 못했습니다. 다른 조합을 눌러 주세요.</value>
+  </data>
+  <data name="Settings_Hotkey_NeedModifier" xml:space="preserve">
+    <value>Ctrl, Alt, Shift, Win 중 하나와 함께 눌러 주세요.</value>
+  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>끝내기</value>
   </data>

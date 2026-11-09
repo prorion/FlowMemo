@@ -11,6 +11,30 @@ public class ApplicationSettingsModel : BaseModel
     // General
     public StartupBehaviour StartupBehaviour { get; set => SetProperty(ref field, value); } = StartupBehaviour.RestoreOpenNotes;
     public NewInstanceBehaviour NewInstanceBehaviour { get; set => SetProperty(ref field, value); } = NewInstanceBehaviour.CreateNewNote;
-    public bool ShowNotifyIcon { get; set => SetProperty(ref field, value); } = true;
+    public bool ShowNotifyIcon
+    {
+        get;
+        set
+        {
+            // 트레이 아이콘이 없으면 작업 표시줄까지 숨긴 앱을 열 방법이 없으므로 트레이 전용도 끈다.
+            if (SetProperty(ref field, value) && !value)
+                TrayOnly = false;
+        }
+    } = true;
+
+    /// <summary>모든 창을 작업 표시줄에서 빼고 트레이 아이콘으로만 관리한다.</summary>
+    public bool TrayOnly
+    {
+        get;
+        set
+        {
+            if (SetProperty(ref field, value) && value)
+                ShowNotifyIcon = true;
+        }
+    } = true;
+
     public bool CheckForUpdates { get; set => SetProperty(ref field, value); } = false;
+
+    /// <summary>모든 메모 보기/숨기기 전역 단축키 ("Ctrl+Alt+H" 형식, 빈 문자열이면 사용 안 함).</summary>
+    public string ToggleNotesHotkey { get; set => SetProperty(ref field, value); } = "Ctrl+Alt+H";
 }

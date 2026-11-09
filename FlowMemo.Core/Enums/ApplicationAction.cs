@@ -4,5 +4,6 @@ public enum ApplicationAction
 {
     Start,
     NewInstance,
-    Close
+    Close,
+    ToggleNotesVisibility
 }

@@ -82,6 +82,53 @@
 
                                 <Border>
                                     <DockPanel LastChildFill="True">
+                                        <CheckBox x:Name="TrayOnlyCheckBox"
+                                                  DockPanel.Dock="Right"
+                                                  AutomationProperties.Name="{x:Static res:Strings.Settings_TrayOnly}"
+                                                  IsChecked="{Binding ApplicationSettings.TrayOnly}" />
+                                        <TextBlock Text="{x:Static res:Strings.Settings_TrayOnly}"/>
+                                    </DockPanel>
+                                </Border>
+
+                                <Border>
+                                    <DockPanel LastChildFill="True">
+                                        <CheckBox x:Name="RunAtStartupCheckBox"
+                                                  DockPanel.Dock="Right"
+                                                  AutomationProperties.Name="{x:Static res:Strings.Settings_RunAtStartup}"
+                                                  IsChecked="{Binding RunAtStartup}" />
+                                        <TextBlock Text="{x:Static res:Strings.Settings_RunAtStartup}"/>
+                                    </DockPanel>
+                                </Border>
+
+                                <Border>
+                                    <StackPanel>
+                                        <DockPanel LastChildFill="True">
+                                            <Button DockPanel.Dock="Right"
+                                                    Margin="8,0,0,0"
+                                                    Padding="12,4"
+                                                    Content="{x:Static res:Strings.Settings_Hotkey_Clear}"
+                                                    Click="ClearToggleNotesHotkey_Click" />
+                                            <TextBox x:Name="ToggleNotesHotkeyBox"
+                                                     DockPanel.Dock="Right"
+                                                     Width="170"
+                                                     IsReadOnly="True"
+                                                     InputMethod.IsInputMethodEnabled="False"
+                                                     AutomationProperties.Name="{x:Static res:Strings.Settings_ToggleNotesHotkey}"
+                                                     ToolTip="{x:Static res:Strings.Settings_Hotkey_ToolTip}"
+                                                     Text="{Binding ApplicationSettings.ToggleNotesHotkey, Mode=OneWay}"
+                                                     PreviewKeyDown="ToggleNotesHotkeyBox_PreviewKeyDown" />
+                                            <TextBlock Text="{x:Static res:Strings.Settings_ToggleNotesHotkey}"/>
+                                        </DockPanel>
+                                        <TextBlock x:Name="ToggleNotesHotkeyStatus"
+                                                   Visibility="Collapsed"
+                                                   FontStyle="Italic"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border>
+                                    <DockPanel LastChildFill="True">
                                         <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ApplicationSettings.CheckForUpdates}" />
                                         <TextBlock Text="{x:Static res:Strings.Settings_CheckForUpdates}"/>
                                     </DockPanel>
