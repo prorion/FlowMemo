@@ -16,6 +16,7 @@ public class NoteSettingsModel : BaseModel
     public MinimizeMode MinimizeMode { get; set => SetProperty(ref field, value); } = MinimizeMode.Allow;
     public VisibilityMode VisibilityMode { get; set => SetProperty(ref field, value); } = VisibilityMode.ShowInTaskbar;
     public bool HideTitleBar { get; set => SetProperty(ref field, value); } = false;
+    public bool SnapToEdges { get; set => SetProperty(ref field, value); } = true;
 
     // Theme
     public bool CycleColours { get; set => SetProperty(ref field, value); } = true;

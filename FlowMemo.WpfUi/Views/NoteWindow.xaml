@@ -289,7 +289,7 @@
                                          Background="Transparent"
                                          Foreground="{Binding Note.ContentTextBoxForeground}"
                                          CaretBrush="{Binding Foreground, RelativeSource={RelativeSource Self}}"
-                                         FontSize="16"
+                                         FontSize="{Binding EditorSettings.FontSize}"
                                          x:Name="NoteTextBox"
                                          Padding="5,5,5,5"
                                          Text="{Binding Note.Content, UpdateSourceTrigger=PropertyChanged}"

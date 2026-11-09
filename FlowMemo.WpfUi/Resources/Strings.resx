@@ -454,6 +454,9 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
   <data name="Settings_HideTitleBar" xml:space="preserve">
     <value>제목 표시줄 자동 숨기기</value>
   </data>
+  <data name="Settings_SnapToEdges" xml:space="preserve">
+    <value>끌어서 옮길 때 화면 끝과 다른 메모에 자석처럼 붙이기</value>
+  </data>
   <data name="Settings_CycleColours" xml:space="preserve">
     <value>새 메모마다 다른 색 쓰기</value>
   </data>
@@ -495,6 +498,9 @@ FlowMemo를 최신 버전으로 업데이트한 뒤 다시 실행하세요.
   </data>
   <data name="Settings_UseMonoFont" xml:space="preserve">
     <value>고정폭 글꼴 사용</value>
+  </data>
+  <data name="Settings_FontSize" xml:space="preserve">
+    <value>메모 글꼴 크기</value>
   </data>
   <data name="Settings_AutoIndent" xml:space="preserve">
     <value>자동 들여쓰기</value>

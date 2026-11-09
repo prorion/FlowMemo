@@ -1,9 +1,11 @@
 ﻿using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -12,6 +14,7 @@ using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Interop;
 using FlowMemo.WpfUi.Interop.Constants;
+using FlowMemo.WpfUi.Interop.Structures;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
 using FlowMemo.WpfUi.Resources;
@@ -34,6 +37,11 @@ public partial class NoteWindow : Window
     private readonly DispatcherTimer _topmostGuardTimer;
 
     private bool _restoringFromMinimize;
+
+    private const int WmMoving = 0x0216;
+    private const double SnapDistanceDips = 12;
+
+    private HwndSource? _hwndSource;
 
     #region NoteWindow
 
@@ -92,7 +100,24 @@ public partial class NoteWindow : Window
     {
         if (WindowState == WindowState.Minimized)
             WindowState = WindowState.Normal;
+        RaiseAboveOtherWindows();
         Activate();
+    }
+
+    /// <summary>
+    /// 다른 프로그램 창 앞으로 한 번 올린다. Windows는 뒤쪽 프로그램의 Activate()를 거부할 수 있어서
+    /// (그러면 메모가 활성 창 뒤에 남는다) '항상 위'를 잠깐 켰다가 바로 끈다. 고정한 메모는 그대로 둔다.
+    /// </summary>
+    private void RaiseAboveOtherWindows()
+    {
+        nint handle = ScreenHelper.GetWindowHandle(this);
+        if (handle == 0)
+            return;
+
+        const uint flags = SWP.NOMOVE | SWP.NOSIZE | SWP.NOACTIVATE;
+        User32.SetWindowPos(handle, HWND.TOPMOST, 0, 0, 0, 0, flags);
+        if (!_viewModel.Note.IsPinned)
+            User32.SetWindowPos(handle, HWND.NOTOPMOST, 0, 0, 0, 0, flags);
     }
 
     /// <summary>바뀐 내용을 바로 저장한다 (앱 종료, Windows 종료 때).</summary>
@@ -163,6 +188,39 @@ public partial class NoteWindow : Window
 
         SyncTopmostState();
         _topmostGuardTimer.Start();
+
+        _hwndSource = HwndSource.FromHwnd(ScreenHelper.GetWindowHandle(this));
+        _hwndSource?.AddHook(SnapWhileMoving);
+    }
+
+    /// <summary>
+    /// 끌어서 옮기는 동안 Windows가 보내는 다음 위치를 화면 끝이나 다른 메모에 맞춘다.
+    /// 다음 위치는 마우스 기준으로 다시 계산되므로, 붙인 뒤에도 더 끌면 자연스럽게 떨어진다.
+    /// </summary>
+    private nint SnapWhileMoving(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (msg != WmMoving || !_noteSettings.SnapToEdges)
+            return 0;
+
+        RECT moving = Marshal.PtrToStructure<RECT>(lParam);
+        (RECT workArea, double scale) = ScreenHelper.GetWorkAreaInPixels(moving);
+        RECT snapped = WindowSnapper.Snap(moving, workArea, GetOtherNoteRects(), (int)Math.Round(SnapDistanceDips * scale));
+        Marshal.StructureToPtr(snapped, lParam, false);
+
+        handled = true;
+        return 1;
+    }
+
+    private List<RECT> GetOtherNoteRects()
+    {
+        List<RECT> rects = [];
+        foreach (NoteWindow note in Application.Current.Windows.OfType<NoteWindow>())
+        {
+            if (!ReferenceEquals(note, this) && note.IsVisible && note.WindowState == WindowState.Normal
+                && User32.GetWindowRect(ScreenHelper.GetWindowHandle(note), out RECT rect))
+                rects.Add(rect);
+        }
+        return rects;
     }
 
     /// <summary>
@@ -358,6 +416,7 @@ public partial class NoteWindow : Window
     {
         // 메신저와 설정 모델은 앱 전체에서 살아 있으므로, 구독을 풀지 않으면 닫힌 창이 메모리에 계속 남는다.
         _topmostGuardTimer.Stop();
+        _hwndSource?.RemoveHook(SnapWhileMoving);
         _messengerService.Unsubscribe<WindowActionMessage>(OnWindowActionMessage);
         _viewModel.Note.PropertyChanged -= OnNotePropertyChanged;
         _viewModel.Detach();

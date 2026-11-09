@@ -393,6 +393,22 @@ internal static class Ui
         pin.Toggle();
         Wait(() => !Native.IsTopmost(meeting), 3000);
 
+        // 다른 프로그램을 쓰는 중에도, 모두 보기를 하면 메모가 그 창 앞으로 온다.
+        // Windows는 뒤쪽 프로그램이 새로 띄운 창을 활성 창 뒤에 두므로, 활성 창을 기준으로 검사한다.
+        Native.PostToggleNotesHotkey(p.Id);
+        Check("단축키로 모든 메모 숨김", Wait(() => !Native.IsWindowVisible(meeting), 3000));
+        Thread.Sleep(500);
+        IntPtr foreground = Native.GetForegroundWindow();
+        Native.GetWindowThreadProcessId(foreground, out uint foregroundOwner);
+        bool canCompare = foreground != IntPtr.Zero && foregroundOwner != p.Id && !Native.IsTopmost(foreground);
+        Native.PostToggleNotesHotkey(p.Id);
+        bool shown = Wait(() => Native.IsWindowVisible(meeting), 3000);
+        if (canCompare)
+            Check("모두 보기: 활성 창이던 다른 프로그램보다 앞으로 옴", shown && Wait(() => Native.IsAbove(meeting, foreground), 3000));
+        else
+            Console.WriteLine("info  활성 창이 없거나 항상 위 창이라 쌓임 순서 검사를 건너뜀");
+        Check("모두 보기: 맨 앞 고정은 아님 (항상 위가 아님)", !Native.IsTopmost(meeting));
+
         // '더 보기' 버튼 → 제목 표시줄 메뉴 → 설정
         AutomationElement? more = ById(ae, "MoreButton");
         Check("'더 보기' 버튼 (접근성 이름)", more?.Current.Name == "더 보기", more?.Current.Name ?? "없음");

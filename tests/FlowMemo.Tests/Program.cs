@@ -461,6 +461,48 @@ internal static class Logic
         Pump();
         Check("숨긴 상태에서 트레이 아이콘을 누르면 모두 다시 보임", !closeWindows.AreNotesHidden && hideWindow.IsVisible);
 
+        // 글꼴 크기: 설정을 바꾸면 열려 있는 메모에 바로 적용
+        var noteTextBox = (System.Windows.Controls.TextBox)hideWindow.FindName("NoteTextBox");
+        bool defaultFontSize = noteTextBox.FontSize == 16;
+        settings.EditorSettings.FontSize = 24;
+        Pump();
+        Check("글꼴 크기: 기본 16, 설정을 바꾸면 메모에 바로 적용", defaultFontSize && noteTextBox.FontSize == 24, noteTextBox.FontSize.ToString());
+        settings.EditorSettings.FontSize = 16;
+        Pump();
+
+        // 자석 붙이기: 실제 창 프로시저로 이동 메시지를 보내 확인 (마우스 입력 없음)
+        static FlowMemo.WpfUi.Interop.Structures.RECT Box(int left, int top, int right, int bottom)
+            => new() { Left = left, Top = top, Right = right, Bottom = bottom };
+        FlowMemo.WpfUi.Interop.Structures.RECT snapWork = Box(0, 0, 1000, 800);
+        var noOthers = Array.Empty<FlowMemo.WpfUi.Interop.Structures.RECT>();
+        var nearEdge = WindowSnapper.Snap(Box(8, 300, 208, 500), snapWork, noOthers, 12);
+        Check("자석: 화면 왼쪽 끝 근처면 붙고 세로는 그대로", nearEdge.Left == 0 && nearEdge.Right == 200 && nearEdge.Top == 300);
+        var nearCorner = WindowSnapper.Snap(Box(795, 590, 995, 790), snapWork, noOthers, 12);
+        Check("자석: 모서리는 가로·세로 모두 붙음", nearCorner.Right == 1000 && nearCorner.Bottom == 800);
+        var farAway = WindowSnapper.Snap(Box(13, 300, 213, 500), snapWork, noOthers, 12);
+        Check("자석: 거리 밖이면 그대로", farAway.Left == 13);
+        var beside = WindowSnapper.Snap(Box(505, 110, 705, 310), snapWork, [Box(300, 100, 500, 300)], 12);
+        Check("자석: 다른 메모 옆에 맞닿고 위쪽도 나란히 맞춤", beside.Left == 500 && beside.Top == 100);
+        var otherRow = WindowSnapper.Snap(Box(505, 500, 705, 700), snapWork, [Box(300, 100, 500, 300)], 12);
+        Check("자석: 다른 메모와 세로로 멀면 옆에 붙지 않음", otherRow.Left == 505);
+        var closest = WindowSnapper.Snap(Box(8, 300, 208, 500), snapWork, [Box(-200, 300, 3, 500)], 12);
+        Check("자석: 여러 후보 중 가장 가까운 곳에 붙음", closest.Left == 3);
+
+        IntPtr snapHandle = new System.Windows.Interop.WindowInteropHelper(hideWindow).Handle;
+        Native.RECT snapStart = Native.Rect(snapHandle);
+        var (realWork, _) = ScreenHelper.GetWorkAreaInPixels(Box(snapStart.Left, snapStart.Top, snapStart.Right, snapStart.Bottom));
+        int snapWidth = snapStart.Right - snapStart.Left, snapHeight = snapStart.Bottom - snapStart.Top;
+        int SendMoving()
+        {
+            Native.RECT proposed = new() { Left = realWork.Left + 3, Top = realWork.Top + 150, Right = realWork.Left + 3 + snapWidth, Bottom = realWork.Top + 150 + snapHeight };
+            Native.SendMessage(snapHandle, 0x0216 /* WM_MOVING */, IntPtr.Zero, ref proposed);
+            return proposed.Left - realWork.Left;
+        }
+        Check("자석: 옮기는 중인 메모가 화면 끝에 붙음", SendMoving() == 0);
+        settings.NoteSettings.SnapToEdges = false;
+        Check("자석: 옵션을 끄면 붙지 않음", SendMoving() == 3);
+        settings.NoteSettings.SnapToEdges = true;
+
         hotkeyService.Dispose();
         foreach (Window openWindow in openNoteWindows.Values.ToList())
             openWindow.Close();

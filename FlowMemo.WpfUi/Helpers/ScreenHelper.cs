@@ -35,6 +35,16 @@ public static class ScreenHelper
         return GetWorkAreaInDips(hMonitor);
     }
 
+    /// <summary>사각형이 있는(또는 가장 가까운) 모니터의 작업 영역과 배율. 작업 영역은 실제 픽셀 단위다.</summary>
+    public static (RECT WorkArea, double Scale) GetWorkAreaInPixels(RECT rect)
+    {
+        nint hMonitor = User32.MonitorFromRect(ref rect, MONITOR.DEFAULTTONEAREST);
+        MONITORINFO monitorInfo = new();
+        monitorInfo.cbSize = Marshal.SizeOf(monitorInfo);
+        User32.GetMonitorInfoW(hMonitor, ref monitorInfo);
+        return (monitorInfo.rcWork, GetMonitorScale(hMonitor));
+    }
+
     /// <summary>
     /// 창의 위쪽(제목 표시줄 부분)이 어느 모니터에든 걸쳐 있으면 true.
     /// 모니터를 떼어내거나 배치를 바꾸면 저장된 위치가 화면 밖이 될 수 있다.

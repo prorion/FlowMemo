@@ -86,7 +86,10 @@ public class WindowService
     private void ShowAllNotes()
     {
         foreach (NoteWindow window in _openNoteWindows.Values)
+        {
             window.Show();
+            window.ActivateNote(); // 트레이 아이콘을 누른 것처럼 다른 창 앞으로 가져온다.
+        }
 
         SetNotesHidden(false);
     }

@@ -18,6 +18,7 @@ public class EditorSettingsModel : BaseModel
     public string StandardFontFamily { get; set => SetProperty(ref field, value); } = "Segoe UI";
     public string MonoFontFamily { get; set => SetProperty(ref field, value); } = "Consolas";
     public bool UseMonoFont { get; set => SetProperty(ref field, value); } = false;
+    public double FontSize { get; set => SetProperty(ref field, value); } = 16;
 
     // Indentation
     public bool AutoIndent { get; set => SetProperty(ref field, value); } = true;

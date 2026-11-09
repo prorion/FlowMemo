@@ -21,6 +21,10 @@ internal static class Native
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+    [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? cls, string? title);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint msg, IntPtr w, ref RECT l);
     [DllImport("user32.dll")] public static extern IntPtr MonitorFromRect(ref RECT r, int flags);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr GetDC(IntPtr h);
@@ -64,6 +68,31 @@ internal static class Native
     }
 
     public static bool IsTopmost(IntPtr h) => (GetWindowLongPtr(h, -20).ToInt64() & 0x8) != 0;
+
+    /// <summary>전역 단축키를 받는 창(메시지 전용)에 단축키가 눌린 것처럼 알린다. 키 입력은 보내지 않는다.</summary>
+    public static void PostToggleNotesHotkey(int pid)
+    {
+        const uint WM_HOTKEY = 0x0312;
+        IntPtr HWND_MESSAGE = new(-3);
+        for (IntPtr h = FindWindowEx(HWND_MESSAGE, IntPtr.Zero, null, null); h != IntPtr.Zero; h = FindWindowEx(HWND_MESSAGE, h, null, null))
+        {
+            GetWindowThreadProcessId(h, out uint owner);
+            if (owner == pid)
+                PostMessage(h, WM_HOTKEY, new IntPtr(1), IntPtr.Zero);
+        }
+    }
+
+    /// <summary>창 쌓임 순서에서 h가 other보다 위에 있는지.</summary>
+    public static bool IsAbove(IntPtr h, IntPtr other)
+    {
+        const uint GW_HWNDPREV = 3;
+        for (IntPtr current = GetWindow(other, GW_HWNDPREV); current != IntPtr.Zero; current = GetWindow(current, GW_HWNDPREV))
+        {
+            if (current == h)
+                return true;
+        }
+        return false;
+    }
 
     public static RECT Rect(IntPtr h) { GetWindowRect(h, out RECT r); return r; }
 

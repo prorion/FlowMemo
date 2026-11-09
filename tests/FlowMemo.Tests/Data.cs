@@ -295,7 +295,7 @@ internal static class Data
     }
 
     /// <summary>v5 이후에 추가한 설정. v4 DB에 없으므로 마이그레이션 표에도 없다 (키가 없으면 기본값을 쓴다).</summary>
-    private static readonly string[] SettingsAddedAfterV4 = ["Application.TrayOnly", "Application.ToggleNotesHotkey"];
+    private static readonly string[] SettingsAddedAfterV4 = ["Application.TrayOnly", "Application.ToggleNotesHotkey", "Notes.SnapToEdges", "Editor.FontSize"];
 
     private static void MigrateDefaultsFromV4(string dir)
     {
