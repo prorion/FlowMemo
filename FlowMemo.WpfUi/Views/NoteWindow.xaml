@@ -80,6 +80,7 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -217,8 +218,73 @@
 
         </Grid>
 
+        <!-- 동기화 안내: 다른 PC의 변경을 이 메모에서 바로 처리한다. 제목 표시줄을 숨겨도 보인다. -->
+        <Border Name="SyncBanner"
+                Grid.Column="0"
+                Grid.Row="1"
+                Padding="8,4,8,5"
+                BorderThickness="0,1,0,1"
+                Background="{Binding Note.TitleGridBackground}"
+                BorderBrush="{Binding Note.BorderBrush}"
+                Visibility="{Binding Note.SyncBannerVisible, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+                <StackPanel.Resources>
+                    <!-- 앱 테마(어두운 테마 포함)가 아니라 메모 색을 따라야 글자가 보인다. -->
+                    <Style TargetType="Button">
+                        <Setter Property="Focusable" Value="False" />
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="Margin" Value="0,3,4,0" />
+                        <Setter Property="Foreground" Value="{Binding Note.ContentTextBoxForeground}" />
+                        <Setter Property="Background" Value="{Binding Note.Background}" />
+                        <Setter Property="BorderBrush" Value="{Binding Note.BorderBrush}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Chrome"
+                                            Padding="9,2"
+                                            CornerRadius="3"
+                                            BorderThickness="1"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </StackPanel.Resources>
+
+                <TextBlock Name="SyncBannerText"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           Text="{Binding Note.SyncBannerText}"
+                           Foreground="{Binding Note.ContentTextBoxForeground}" />
+
+                <WrapPanel Visibility="{Binding Note.SyncShowIncomingActions, Converter={StaticResource BoolToVisibility}}">
+                    <Button Name="SyncAcceptButton" Content="{x:Static res:Strings.Sync_Action_Accept}" Click="SyncAcceptButton_Click" />
+                    <Button Name="SyncCompareButton" Content="{x:Static res:Strings.Sync_Action_Compare}" Click="SyncCompareButton_Click" />
+                    <Button Name="SyncSkipButton" Content="{x:Static res:Strings.Sync_Action_Skip}" Click="SyncSkipButton_Click" />
+                </WrapPanel>
+
+                <WrapPanel Visibility="{Binding Note.SyncShowConflictActions, Converter={StaticResource BoolToVisibility}}">
+                    <Button Name="SyncResolveButton" Content="{x:Static res:Strings.Sync_Action_Resolve}" Click="SyncCompareButton_Click" />
+                </WrapPanel>
+
+                <WrapPanel Visibility="{Binding Note.SyncShowDeletedActions, Converter={StaticResource BoolToVisibility}}">
+                    <Button Name="SyncTrashButton" Content="{x:Static res:Strings.Sync_Action_Trash}" Click="SyncTrashButton_Click" />
+                    <Button Name="SyncKeepButton" Content="{x:Static res:Strings.Sync_Action_Keep}" Click="SyncKeepButton_Click" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
         <!-- Text Box -->
-        <Grid Grid.Column="0" Grid.Row="1">
+        <Grid Grid.Column="0" Grid.Row="2">
             <controls:NoteTextBoxControl BorderThickness="0"
                                          Background="Transparent"
                                          Foreground="{Binding Note.ContentTextBoxForeground}"

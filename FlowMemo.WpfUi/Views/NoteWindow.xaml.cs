@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
 using FlowMemo.Core.Enums;
+using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Interop;
 using FlowMemo.WpfUi.Interop.Constants;
@@ -273,8 +274,49 @@ public partial class NoteWindow : Window
             HideTitleBar();
     }
 
+    private void SyncAcceptButton_Click(object sender, RoutedEventArgs e)
+        => ErrorReporter.FireAndForget(AcceptRemoteChange(), "Sync accept");
+
+    private async Task AcceptRemoteChange()
+    {
+        // 안내가 뜬 뒤 이 메모를 고쳤다면 그냥 덮어쓰지 않고 비교 창을 연다.
+        if (!await _viewModel.AcceptRemote())
+            await CompareRemoteChange();
+    }
+
+    private void SyncCompareButton_Click(object sender, RoutedEventArgs e)
+        => ErrorReporter.FireAndForget(CompareRemoteChange(), "Sync compare");
+
+    private async Task CompareRemoteChange()
+    {
+        NoteSyncRow? row = await _viewModel.PrepareCompare();
+        if (row is null)
+            return;
+
+        SyncDiffWindow window = new(row, _viewModel.Note.Content) { Owner = this };
+        window.ShowDialog();
+
+        await _viewModel.ApplyDecision(row, window.Decision, window.MergedText);
+    }
+
+    private void SyncSkipButton_Click(object sender, RoutedEventArgs e)
+        => ErrorReporter.FireAndForget(_viewModel.SkipRemote(), "Sync skip");
+
+    private void SyncKeepButton_Click(object sender, RoutedEventArgs e)
+        => ErrorReporter.FireAndForget(_viewModel.KeepAfterRemoteDeletion(), "Sync keep");
+
+    private void SyncTrashButton_Click(object sender, RoutedEventArgs e)
+        => ErrorReporter.FireAndForget(MoveToTrashFromRemote(), "Sync trash");
+
+    private async Task MoveToTrashFromRemote()
+    {
+        await _viewModel.AcceptRemoteDeletion();
+        CloseByUser();
+    }
+
     private void Window_Activated(object? sender, EventArgs e)
     {
+        _viewModel.OnActivated();
         _viewModel.Note.IsFocused = true;
         _viewModel.UpdateOpacity();
         ShowTitleBar();

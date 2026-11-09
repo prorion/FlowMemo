@@ -2,6 +2,7 @@
 
 using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
+using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Themes;
 
 namespace FlowMemo.WpfUi.Models;
@@ -128,6 +129,22 @@ public class NoteModel : BaseModel
 
 
     public nint WindowHandle { get; set; }
+
+    // 메모 상단의 동기화 안내. 화면용이라 저장하지 않는다.
+    public bool SyncBannerVisible { get; private set => SetProperty(ref field, value); }
+    public string SyncBannerText { get; private set => SetProperty(ref field, value); } = "";
+    public bool SyncShowIncomingActions { get; private set => SetProperty(ref field, value); }
+    public bool SyncShowConflictActions { get; private set => SetProperty(ref field, value); }
+    public bool SyncShowDeletedActions { get; private set => SetProperty(ref field, value); }
+
+    public void SetSyncBanner(SyncNoteStatus status, string? text)
+    {
+        SyncBannerText = text ?? "";
+        SyncBannerVisible = text is not null;
+        SyncShowIncomingActions = status == SyncNoteStatus.Incoming;
+        SyncShowConflictActions = status == SyncNoteStatus.Conflict;
+        SyncShowDeletedActions = status == SyncNoteStatus.RemoteDeleted;
+    }
 
     public bool IsFocused { get; set => SetProperty(ref field, value); }
 

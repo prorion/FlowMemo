@@ -7,6 +7,7 @@ using System.Windows.Input;
 using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
 using FlowMemo.Core.Repositories;
+using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Messages;
@@ -27,6 +28,7 @@ public class ManagementViewModel : BaseViewModel, INotifyPropertyChanged
     private readonly NoteRepository _noteRepository;
     private readonly ThemeService _themeService;
     private readonly WindowService _windowService;
+    private readonly SyncService _syncService;
 
     private readonly Dictionary<int, int> _notePreviewIdIndexMap = []; // Use this since we don't have a Observable Dictionary
     private readonly Dictionary<int, NotePreviewModel> _selectedNotePreviews = [];
@@ -37,9 +39,11 @@ public class ManagementViewModel : BaseViewModel, INotifyPropertyChanged
         SettingsService settingsService,
         MessengerService messengerService,
         ThemeService themeService,
-        WindowService windowService
+        WindowService windowService,
+        SyncService syncService
     ) : base(appMetadataService, settingsService, messengerService)
     {
+        _syncService = syncService;
         _noteRepository = noteRepository;
         _themeService = themeService;
         _windowService = windowService;
@@ -60,6 +64,8 @@ public class ManagementViewModel : BaseViewModel, INotifyPropertyChanged
         ErrorReporter.FireAndForget(LoadNotes(), "Management load");
 
         MessengerService.Subscribe<NoteActionMessage>(OnNoteActionMessage);
+        MessengerService.Subscribe<NoteSyncChangedMessage>(OnNoteSyncChanged);
+        MessengerService.Subscribe<SyncNotesAddedMessage>(OnSyncNotesAdded);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -132,8 +138,43 @@ public class ManagementViewModel : BaseViewModel, INotifyPropertyChanged
             NotePreviews[^1].IsOpen = !IsTrashMode && _windowService.IsNoteWindowOpen(noteDto.Id);
         }
 
+        if (!IsTrashMode)
+        {
+            foreach (NoteSyncRow row in await _syncService.GetAllRows())
+                UpdateSyncBadge(row);
+        }
+
         await RefreshTrashCount();
         RaiseSelectionCommandsChanged();
+    }
+
+    private void UpdateSyncBadge(NoteSyncRow row)
+    {
+        if (!_notePreviewIdIndexMap.TryGetValue(row.NoteId, out int index))
+            return;
+
+        NotePreviews[index].SyncBadge = row.Status switch
+        {
+            SyncNoteStatus.Incoming => Strings.Management_Sync_Incoming,
+            SyncNoteStatus.Conflict => Strings.Management_Sync_Conflict,
+            SyncNoteStatus.RemoteDeleted => Strings.Management_Sync_Deleted,
+            _ => null
+        };
+    }
+
+    private void OnNoteSyncChanged(NoteSyncChangedMessage message)
+        => ErrorReporter.FireAndForget(RefreshSyncBadge(message.NoteId), "Management sync badge");
+
+    private async Task RefreshSyncBadge(int noteId)
+    {
+        if (await _syncService.GetRow(noteId) is NoteSyncRow row)
+            UpdateSyncBadge(row);
+    }
+
+    private void OnSyncNotesAdded(SyncNotesAddedMessage message)
+    {
+        if (!IsTrashMode)
+            ErrorReporter.FireAndForget(LoadNotes(), "Management sync reload");
     }
 
     private async Task RefreshTrashCount()
@@ -171,7 +212,11 @@ public class ManagementViewModel : BaseViewModel, INotifyPropertyChanged
 
     /// <summary>관리 창이 닫힐 때 호출한다. 구독을 풀지 않으면 닫힌 창의 뷰모델이 계속 메시지를 받는다.</summary>
     public void Detach()
-        => MessengerService.Unsubscribe<NoteActionMessage>(OnNoteActionMessage);
+    {
+        MessengerService.Unsubscribe<NoteActionMessage>(OnNoteActionMessage);
+        MessengerService.Unsubscribe<NoteSyncChangedMessage>(OnNoteSyncChanged);
+        MessengerService.Unsubscribe<SyncNotesAddedMessage>(OnSyncNotesAdded);
+    }
 
     private void UpdatedNotePreview(NoteDto dto)
     {

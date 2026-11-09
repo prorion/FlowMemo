@@ -37,6 +37,7 @@ public partial class App : Application
     private SettingsService? _settingsService;
     private NotifyIconService? _notifyIconService;
     private GlobalHotkeyService? _globalHotkeyService;
+    private SyncService? _syncService;
     private WindowService? _windowService;
 
     private EventWaitHandle? _eventWaitHandle;
@@ -143,6 +144,9 @@ public partial class App : Application
 
         ShutdownMode = (_applicationSettings.ShowNotifyIcon) ? ShutdownMode.OnExplicitShutdown : ShutdownMode.OnLastWindowClose;
 
+        _syncService = Services.GetRequiredService<SyncService>();
+        _syncService.Start();
+
         if (_settingsService.ApplicationSettings.CheckForUpdates)
         {
             DateTimeOffset date = DateTimeOffset.UtcNow;
@@ -207,6 +211,8 @@ public partial class App : Application
         services.AddSingleton<SettingsRepository>();
         services.AddSingleton<AppMetadataRepository>();
         services.AddSingleton<NoteRepository>();
+        services.AddSingleton<SyncRepository>();
+        services.AddSingleton<SyncService>();
 
         services.AddSingleton<AppMetadataService>();
         services.AddSingleton<SettingsService>();
@@ -239,6 +245,7 @@ public partial class App : Application
         _backupTimer?.Stop();
         _notifyIconService?.Dispose();
         _globalHotkeyService?.Dispose();
+        _syncService?.Dispose();
 
         if (_ownsMutex)
             _mutex?.ReleaseMutex();

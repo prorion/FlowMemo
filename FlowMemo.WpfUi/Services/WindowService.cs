@@ -20,6 +20,7 @@ public class WindowService
     private readonly SettingsService _settingsService;
     private readonly NoteRepository _noteRepository;
     private readonly ThemeService _themeService;
+    private readonly SyncService _syncService;
 
     private readonly Dictionary<int, NoteWindow> _openNoteWindows = [];
     private SettingsWindow? _settingsWindow;
@@ -31,9 +32,11 @@ public class WindowService
         AppMetadataService appMetadataService,
         SettingsService settingsService,
         NoteRepository noteRepository,
-        ThemeService themeService
+        ThemeService themeService,
+        SyncService syncService
     )
     {
+        _syncService = syncService;
         _serviceProvider = serviceProvider;
         _messengerService = messengerService;
         _appMetadataService = appMetadataService;
@@ -264,7 +267,7 @@ public class WindowService
             return;
         }
 
-        NoteViewModel viewModel = new(_noteRepository, _appMetadataService, _settingsService, _messengerService, _themeService);
+        NoteViewModel viewModel = new(_noteRepository, _appMetadataService, _settingsService, _messengerService, _themeService, _syncService);
         await viewModel.Initialize(noteId, parentNote, managementWindowHandle);
 
         NoteWindow window = new(_settingsService, _messengerService, _themeService, viewModel);

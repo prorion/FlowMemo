@@ -255,6 +255,15 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+                    <!-- 다른 PC의 변경이 기다리는 메모 -->
+                    <TextBlock Text="{Binding SyncBadge}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Margin="0,3,6,0"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"
+                               IsHitTestVisible="False"
+                               Foreground="{Binding TextBrush}" />
                     <!-- 휴지통: 며칠 뒤 완전히 지워지는지 -->
                     <TextBlock Text="{Binding TrashInfo}"
                                FontSize="10"

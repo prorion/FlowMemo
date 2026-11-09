@@ -47,6 +47,96 @@ internal static class Ui
         }
     }
 
+    /// <summary>실제 앱을 로컬 동기화 서버에 연결해 메모 상단 버튼, 비교 창, 충돌 해결을 검사한다.</summary>
+    public static void SyncScenario(string appDir, string outDir, FlowMemo.Core.Sync.SyncCredentials credentials, SyncTests.Pc other)
+    {
+        Console.WriteLine("== UI 시나리오 G: 동기화 (메모 상단 안내 · 비교 · 충돌 해결)");
+        _appDir = appDir;
+        _out = outDir;
+        _exe = Path.Combine(appDir, "FlowMemo.exe");
+        _conn = $"Data Source={Path.Combine(appDir, "flowmemo.sqlite")};Pooling=False";
+
+        string credentialsPath = Path.Combine(appDir, FlowMemo.WpfUi.Helpers.SyncCredentialStore.FileName);
+        try
+        {
+            ResetDb(c => InsertNote(c, "첫째 줄\r\n둘째 줄\r\n셋째 줄\r\n", 200, 200, "Yellow", false, true));
+            new FlowMemo.WpfUi.Helpers.SyncCredentialStore(credentialsPath).Save(credentials);
+            string syncId = (string)Scalar("SELECT SyncId FROM NoteSync")!;
+
+            Process p = Launch();
+            IntPtr note = IntPtr.Zero;
+            Wait(() => (note = NoteWindows(p.Id).FirstOrDefault()) != IntPtr.Zero);
+            Check("동기화 앱: 메모 복원", note != IntPtr.Zero);
+            AutomationElement ae = AE(note);
+            ValuePattern Text() => (ValuePattern)ById(ae, "NoteTextBox")!.GetCurrentPattern(ValuePattern.Pattern);
+
+            bool uploaded = Wait(() => { other.Cycle(); return other.RowBySyncId(syncId) is not null; }, 15000);
+            Check("동기화 앱: 시작하면 메모를 올림", uploaded);
+            int otherId = other.IdOf(syncId);
+
+            // 다른 PC 변경: 메모 상단 버튼
+            other.Edit(otherId, "첫째 줄 다른 PC\r\n둘째 줄\r\n셋째 줄\r\n");
+            other.Cycle();
+            Check("메모 상단: 다른 PC 변경이 오면 [가져오기] 표시", Wait(() => ById(ae, "SyncAcceptButton") is not null, 40000));
+            Check("메모 상단: [비교]·[건너뛰기] 표시", ById(ae, "SyncCompareButton") is not null && ById(ae, "SyncSkipButton") is not null);
+            Check("메모 상단: 누르기 전에는 내용이 그대로", Text().Current.Value.StartsWith("첫째 줄\r\n"));
+            Thread.Sleep(300);
+            Capture(note, "G1_note_incoming.png");
+
+            Invoke(ById(ae, "SyncCompareButton"));
+            IntPtr diff = WaitWindow(p.Id, t => t == "FlowMemo - 변경 비교");
+            Check("비교 창이 열림", diff != IntPtr.Zero);
+            Thread.Sleep(500);
+            Capture(diff, "G2_diff_incoming.png");
+            AutomationElement dae = AE(diff);
+            Check("비교 창: 양쪽 내용이 보임", HasText(dae, "첫째 줄") || All(dae, ControlType.Text).Cast<AutomationElement>().Any(e => e.Current.Name.Contains("첫째 줄")));
+            Invoke(ById(dae, "LaterButton"));
+            Check("비교 창 [나중에]: 안내가 그대로 남음", Wait(() => !Native.VisibleWindows(p.Id).Contains(diff), 3000) && ById(ae, "SyncAcceptButton") is not null);
+
+            Invoke(ById(ae, "SyncAcceptButton"));
+            Check("[가져오기]: 내용이 바뀌고 버튼이 사라짐",
+                Wait(() => Text().Current.Value.StartsWith("첫째 줄 다른 PC") && ById(ae, "SyncAcceptButton") is null, 5000), Program.Esc(Text().Current.Value));
+
+            // 충돌
+            other.Edit(otherId, "첫째 줄 다른 PC 또\r\n둘째 줄\r\n셋째 줄\r\n");
+            other.Cycle();
+            Text().SetValue("첫째 줄 다른 PC\r\n둘째 줄\r\n셋째 줄 이 앱에서\r\n");
+            Check("충돌: 양쪽에서 고치면 [비교하고 해결] 표시", Wait(() => ById(ae, "SyncResolveButton") is not null, 45000));
+            Thread.Sleep(300);
+            Capture(note, "G3_note_conflict.png");
+
+            Invoke(ById(ae, "SyncResolveButton"));
+            diff = WaitWindow(p.Id, t => t == "FlowMemo - 변경 비교");
+            Thread.Sleep(500);
+            Capture(diff, "G4_diff_conflict.png");
+            dae = AE(diff);
+            ValuePattern merged = (ValuePattern)ById(dae, "MergeTextBox")!.GetCurrentPattern(ValuePattern.Pattern);
+            Check("충돌 창: 서로 다른 줄은 자동으로 합쳐 보여 줌", merged.Current.Value.Contains("다른 PC 또") && merged.Current.Value.Contains("이 앱에서"), Program.Esc(merged.Current.Value));
+            Check("충돌 창: 유지·바꾸기·둘 다 보관 버튼",
+                ById(dae, "KeepLocalButton") is not null && ById(dae, "TakeRemoteButton") is not null && ById(dae, "KeepBothButton") is not null);
+
+            Invoke(ById(dae, "SaveMergedButton"));
+            Check("합친 내용 저장: 메모에 반영, 안내 사라짐",
+                Wait(() => Text().Current.Value.Contains("다른 PC 또") && Text().Current.Value.Contains("이 앱에서") && ById(ae, "SyncResolveButton") is null, 5000));
+            Check("합친 내용 저장: 다른 PC에 도착", Wait(() =>
+            {
+                other.Cycle();
+                return other.Row(otherId).PendingContent?.Contains("이 앱에서") == true;
+            }, 15000));
+
+            CheckLog("G");
+        }
+        catch (Exception ex)
+        {
+            Check("[G] 시나리오가 예외 없이 끝남", false, ex.ToString());
+        }
+        finally
+        {
+            KillTestInstances();
+            File.Delete(credentialsPath);
+        }
+    }
+
     /// <summary>테스트용 복사본(_appDir)에서 띄운 FlowMemo만 끈다.</summary>
     private static void KillTestInstances()
     {
@@ -438,7 +528,7 @@ internal static class Ui
         AutomationElement sae = AE(settings);
 
         string[] tabNames = [.. All(sae, ControlType.TabItem).Cast<AutomationElement>().Select(e => e.Current.Name)];
-        Check("설정 탭 이름", string.Join(",", tabNames) == "앱,메모,편집기,도구", string.Join(",", tabNames));
+        Check("설정 탭 이름", string.Join(",", tabNames) == "앱,메모,편집기,도구,동기화", string.Join(",", tabNames));
         Check("설정 창: 트레이 전용·시작 프로그램·단축키 항목 (기본 단축키 Ctrl+Alt+H)",
             ById(sae, "TrayOnlyCheckBox") is not null && ById(sae, "RunAtStartupCheckBox") is not null
             && ((ValuePattern)ById(sae, "ToggleNotesHotkeyBox")!.GetCurrentPattern(ValuePattern.Pattern)).Current.Value == "Ctrl+Alt+H");

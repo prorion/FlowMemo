@@ -768,6 +768,129 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Sync Tab -->
+            <TabItem Header="{x:Static res:Strings.Settings_Tab_Sync}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <!-- 연결 전 -->
+                        <GroupBox x:Name="SyncConnectGroup" Header="{x:Static res:Strings.Settings_Sync_ConnectHeader}">
+                            <StackPanel>
+                                <TextBlock FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,8" Text="{x:Static res:Strings.Settings_Sync_Intro}" />
+                                <Border>
+                                    <StackPanel>
+                                        <TextBlock Margin="0,0,0,4" Text="{x:Static res:Strings.Settings_Sync_CodeLabel}" />
+                                        <TextBox x:Name="SyncCodeBox"
+                                                 InputMethod.IsInputMethodEnabled="False"
+                                                 AutomationProperties.Name="{x:Static res:Strings.Settings_Sync_CodeLabel}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border>
+                                    <DockPanel LastChildFill="True">
+                                        <TextBox x:Name="SyncDeviceNameBox"
+                                                 DockPanel.Dock="Right"
+                                                 Width="220"
+                                                 MaxLength="64"
+                                                 AutomationProperties.Name="{x:Static res:Strings.Settings_Sync_DeviceName}" />
+                                        <TextBlock Text="{x:Static res:Strings.Settings_Sync_DeviceName}" />
+                                    </DockPanel>
+                                </Border>
+                                <DockPanel LastChildFill="True" Margin="0,4,0,8">
+                                    <Button x:Name="SyncConnectButton"
+                                            DockPanel.Dock="Right"
+                                            Padding="16,4"
+                                            Content="{x:Static res:Strings.Settings_Sync_Connect}"
+                                            Click="SyncConnectButton_Click" />
+                                    <TextBlock x:Name="SyncConnectStatus" TextWrapping="Wrap" Margin="0,0,12,0" />
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- 연결 후 -->
+                        <StackPanel x:Name="SyncConnectedPanel" Visibility="Collapsed">
+                            <GroupBox Header="{x:Static res:Strings.Settings_Sync_StatusHeader}">
+                                <StackPanel>
+                                    <Border>
+                                        <DockPanel LastChildFill="True">
+                                            <Button x:Name="SyncNowButton"
+                                                    DockPanel.Dock="Right"
+                                                    Padding="12,4"
+                                                    Content="{x:Static res:Strings.Settings_Sync_SyncNow}"
+                                                    Click="SyncNowButton_Click" />
+                                            <TextBlock x:Name="SyncStatusText" TextWrapping="Wrap" Margin="0,0,12,0" />
+                                        </DockPanel>
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="{x:Static res:Strings.Settings_Sync_PairHeader}">
+                                <StackPanel>
+                                    <TextBlock FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,8" Text="{x:Static res:Strings.Settings_Sync_PairHelp}" />
+                                    <Border>
+                                        <StackPanel>
+                                            <DockPanel LastChildFill="False">
+                                                <Button x:Name="SyncCreatePairButton"
+                                                        DockPanel.Dock="Left"
+                                                        Padding="12,4"
+                                                        Content="{x:Static res:Strings.Settings_Sync_CreatePairCode}"
+                                                        Click="SyncCreatePairButton_Click" />
+                                                <Button x:Name="SyncCopyPairButton"
+                                                        DockPanel.Dock="Right"
+                                                        Padding="12,4"
+                                                        IsEnabled="False"
+                                                        Content="{x:Static res:Strings.Settings_Sync_Copy}"
+                                                        Click="SyncCopyPairButton_Click" />
+                                            </DockPanel>
+                                            <TextBox x:Name="SyncPairCodeBox" IsReadOnly="True" Margin="0,6,0,0" TextWrapping="Wrap" MaxHeight="70"
+                                                     AutomationProperties.Name="{x:Static res:Strings.Settings_Sync_PairHeader}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox x:Name="SyncRecoveryGroup" Header="{x:Static res:Strings.Settings_Sync_RecoveryHeader}">
+                                <StackPanel>
+                                    <TextBlock FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,8" Text="{x:Static res:Strings.Settings_Sync_RecoveryHelp}" />
+                                    <Border>
+                                        <StackPanel>
+                                            <DockPanel LastChildFill="False">
+                                                <Button x:Name="SyncShowRecoveryButton"
+                                                        DockPanel.Dock="Left"
+                                                        Padding="12,4"
+                                                        Content="{x:Static res:Strings.Settings_Sync_ShowRecovery}"
+                                                        Click="SyncShowRecoveryButton_Click" />
+                                                <Button x:Name="SyncCopyRecoveryButton"
+                                                        DockPanel.Dock="Right"
+                                                        Padding="12,4"
+                                                        IsEnabled="False"
+                                                        Content="{x:Static res:Strings.Settings_Sync_Copy}"
+                                                        Click="SyncCopyRecoveryButton_Click" />
+                                            </DockPanel>
+                                            <TextBox x:Name="SyncRecoveryCodeBox" IsReadOnly="True" Margin="0,6,0,0" TextWrapping="Wrap" MaxHeight="70"
+                                                     AutomationProperties.Name="{x:Static res:Strings.Settings_Sync_RecoveryHeader}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <GroupBox Header="{x:Static res:Strings.Settings_Sync_Devices}">
+                                <StackPanel>
+                                    <StackPanel x:Name="SyncDevicesPanel" />
+                                    <DockPanel LastChildFill="False" Margin="0,4,0,8">
+                                        <Button x:Name="SyncDisconnectButton"
+                                                DockPanel.Dock="Right"
+                                                Padding="12,4"
+                                                Content="{x:Static res:Strings.Settings_Sync_Disconnect}"
+                                                Click="SyncDisconnectButton_Click" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
         </TabControl>
 
         <!-- 설정은 바뀌는 즉시 저장된다. 확인/취소 버튼을 찾지 않도록 알려 주고, 닫기(Esc)를 둔다. -->

@@ -2,14 +2,17 @@
 using System.Windows;
 using System.Windows.Threading;
 
+using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
 using FlowMemo.Core.Repositories;
+using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Commands;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Interop;
 using FlowMemo.WpfUi.Interop.Constants;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
+using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
 using FlowMemo.WpfUi.Themes;
 
@@ -19,6 +22,7 @@ public class NoteViewModel : BaseViewModel
 {
     private readonly NoteRepository _noteRepository;
     private readonly ThemeService _themeService;
+    private readonly SyncService _syncService;
 
     private readonly DispatcherTimer _saveTimer;
 
@@ -27,11 +31,13 @@ public class NoteViewModel : BaseViewModel
         AppMetadataService appMetadataService,
         SettingsService settingsService,
         MessengerService messengerService,
-        ThemeService themeService
+        ThemeService themeService,
+        SyncService syncService
     ) : base(appMetadataService, settingsService, messengerService)
     {
         _noteRepository = noteRepository;
         _themeService = themeService;
+        _syncService = syncService;
 
         ChangeThemeColourCommand = new RelayCommand<string>(ChangeThemeColour);
 
@@ -68,6 +74,161 @@ public class NoteViewModel : BaseViewModel
         UpdateVisibility();
 
         _saveTimer.Start();
+
+        Note.PropertyChanged += OnNotePropertyChangedForSync;
+        MessengerService.Subscribe<NoteSyncChangedMessage>(OnNoteSyncChanged);
+        ErrorReporter.FireAndForget(RefreshSyncBanner(), "Sync banner");
+    }
+
+    /// <summary>메모에 포커스가 왔을 때. 고치기 전에 다른 PC의 변경을 먼저 받는다.</summary>
+    public void OnActivated()
+        => _syncService.OnNoteFocused();
+
+    private void OnNotePropertyChangedForSync(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(NoteModel.Content))
+            _syncService.ReportEditing(Note.Id);
+    }
+
+    private void OnNoteSyncChanged(NoteSyncChangedMessage message)
+    {
+        if (message.NoteId != Note.Id)
+            return;
+
+        if (message.NewColour is not null)
+            ChangeThemeColour(message.NewColour);
+
+        ErrorReporter.FireAndForget(RefreshSyncBanner(), "Sync banner");
+    }
+
+    private async Task RefreshSyncBanner()
+    {
+        if (!_syncService.IsConnected)
+        {
+            Note.SetSyncBanner(SyncNoteStatus.None, null);
+            return;
+        }
+
+        NoteSyncRow? row = await _syncService.GetRow(Note.Id);
+        SyncNoteStatus status = row?.Status ?? SyncNoteStatus.None;
+        string device = row?.PendingDevice ?? "";
+
+        string? text = status switch
+        {
+            SyncNoteStatus.Incoming => string.Format(Strings.Sync_Banner_Incoming, device, row?.PendingAt?.ToLocalTime()),
+            SyncNoteStatus.Conflict => string.Format(Strings.Sync_Banner_Conflict, device),
+            SyncNoteStatus.RemoteDeleted => string.Format(Strings.Sync_Banner_RemoteDeleted, device),
+            _ => _syncService.GetEditingDevice(Note.Id) is string editing ? string.Format(Strings.Sync_Banner_Editing, editing) : null
+        };
+
+        Note.SetSyncBanner(status, text);
+    }
+
+    /// <summary>비교 창에 보여 줄 상태. 고치던 내용을 먼저 저장해서 최신 내용으로 비교한다.</summary>
+    public async Task<NoteSyncRow?> PrepareCompare()
+    {
+        await SaveNote();
+        NoteSyncRow? row = await _syncService.GetRow(Note.Id);
+        return row is { HasPending: true, PendingDeleted: false } ? row : null;
+    }
+
+    /// <summary>메모 상단의 [가져오기]. 그 사이 이 PC에서 고쳤다면 false를 돌려준다 (비교 창으로 넘긴다).</summary>
+    public async Task<bool> AcceptRemote()
+    {
+        NoteSyncRow? row = await PrepareCompare();
+        if (row is null)
+            return true;
+        if (row.Status == SyncNoteStatus.Conflict)
+            return false;
+
+        await ApplyDecision(row, SyncDecision.TakeRemote, null);
+        return true;
+    }
+
+    public Task SkipRemote()
+        => _syncService.Ignore(Note.Id);
+
+    /// <summary>다른 PC에서 지운 메모를 이 PC에서도 휴지통으로 보낸다.</summary>
+    public async Task AcceptRemoteDeletion()
+    {
+        await SaveNote();
+        await _noteRepository.MoveToTrash(Note.Id, DateTime.UtcNow);
+        await _syncService.CommitPending(Note.Id);
+    }
+
+    /// <summary>다른 PC에서 지웠지만 이 PC 메모를 남긴다 (다른 PC에도 다시 나타난다).</summary>
+    public async Task KeepAfterRemoteDeletion()
+    {
+        await SaveNote();
+        await _syncService.CommitPending(Note.Id);
+    }
+
+    public async Task ApplyDecision(NoteSyncRow compared, SyncDecision decision, string? mergedText)
+    {
+        if (decision is SyncDecision.None)
+            return;
+
+        // 비교하는 동안 더 새로운 변경이 왔다면 본 적 없는 내용을 적용하지 않는다.
+        NoteSyncRow? latest = await _syncService.GetRow(Note.Id);
+        if (latest is null || latest.PendingRevision != compared.PendingRevision)
+        {
+            await RefreshSyncBanner();
+            return;
+        }
+
+        switch (decision)
+        {
+            case SyncDecision.Skip:
+                await _syncService.Ignore(Note.Id);
+                return;
+
+            case SyncDecision.TakeRemote:
+                Note.Content = latest.PendingContent ?? "";
+                if (latest.PendingColour is not null)
+                    ChangeThemeColour(latest.PendingColour);
+                break;
+
+            case SyncDecision.Merge:
+                Note.Content = mergedText ?? Note.Content;
+                break;
+
+            case SyncDecision.KeepBoth:
+                await CreateCopyOfRemote(latest);
+                break;
+
+            case SyncDecision.KeepLocal:
+                break;
+        }
+
+        await SaveNote();
+        await _syncService.CommitPending(Note.Id);
+    }
+
+    /// <summary>다른 PC 내용을 새 메모로 만들어 연다. 원래 메모는 이 PC 내용을 유지한다.</summary>
+    private async Task CreateCopyOfRemote(NoteSyncRow row)
+    {
+        const double offset = 45;
+        DateTime now = DateTime.UtcNow;
+
+        int copyId = await _noteRepository.Create(new NoteDto(
+            0,
+            row.PendingContent ?? "",
+            Note.X + offset,
+            Note.Y + offset,
+            Note.Width,
+            Note.Height,
+            Note.GravityX,
+            Note.GravityY,
+            row.PendingColour ?? Note.ThemeColourScheme,
+            false,
+            true,
+            false,
+            now,
+            now,
+            null
+        ));
+
+        MessengerService.Publish(new OpenNoteWindowMessage(NoteId: copyId));
     }
 
     public void OnWindowMoved(double left, double top)
@@ -123,6 +284,8 @@ public class NoteViewModel : BaseViewModel
         _saveTimer.Stop();
         NoteSettings.PropertyChanged -= OnNoteSettingsChanged;
         SettingsService.ApplicationSettings.PropertyChanged -= OnApplicationSettingsChanged;
+        MessengerService.Unsubscribe<NoteSyncChangedMessage>(OnNoteSyncChanged);
+        Note.PropertyChanged -= OnNotePropertyChangedForSync;
     }
 
     public async Task<bool> CloseNote()

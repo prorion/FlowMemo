@@ -65,6 +65,9 @@ public class NotePreviewModel : BaseModel
 
     public bool IsSelected { get; set => SetProperty(ref field, value); }
 
+    /// <summary>다른 PC의 변경이 기다리고 있을 때 카드에 보이는 표시. 메모를 열면 처리할 수 있다.</summary>
+    public string? SyncBadge { get; set => SetProperty(ref field, value); }
+
     /// <summary>메모 창이 열려 있는지. 관리 창에서 닫힌 메모를 흐리게 보여 준다.</summary>
     public bool IsOpen { get; set => SetProperty(ref field, value); }
 

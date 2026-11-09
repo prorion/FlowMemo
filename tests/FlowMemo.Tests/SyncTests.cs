@@ -64,7 +64,7 @@ internal static class SyncTests
     }
 
     /// <summary>임시 DB를 가진 가상 PC.</summary>
-    private sealed class Pc
+    internal sealed class Pc
     {
         public readonly NoteRepository Notes;
         public readonly SyncRepository Sync;
@@ -118,7 +118,7 @@ internal static class SyncTests
         public void Ignore(int id) => Wait(Sync.Ignore(id));
     }
 
-    public static void Run(string dir, string serverUrl, string setupCode)
+    public static void Run(string dir, string serverUrl, string setupCode, string appDir, string outDir)
     {
         Console.WriteLine("== 동기화 테스트 (로컬 Worker에 PC 두 대 연결)");
         if (Directory.Exists(dir))
@@ -306,6 +306,12 @@ internal static class SyncTests
         Check("연결 해제: 메모는 남고 기록만 지움", pc2.Note(a2).Content == "똑같은 내용" && pc2.Row(a2).BaseRevision == 0);
         pc2.Cycle();
         Check("다시 연결: 내용이 같으면 충돌 없이 맞춰짐", pc2.Row(a2).Status == SyncNoteStatus.None && pc2.Row(a2).BaseRevision > 0);
+
+        // 실제 앱 화면
+        string appPairSecret = SyncSecrets.NewSecret();
+        Wait(pc1.Api.CreatePairing(SyncSecrets.Sha256Hex(appPairSecret)));
+        SyncCredentials appCredentials = Wait(SyncConnector.Connect(new SyncConnectionCode(SyncCodeKind.Pair, serverUrl, appPairSecret, pc1.Credentials.VaultKey), "앱 PC"));
+        Ui.SyncScenario(appDir, outDir, appCredentials, pc1);
     }
 
     private static bool Unauthorized(SyncApi api)

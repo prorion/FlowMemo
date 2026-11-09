@@ -1,11 +1,14 @@
 ﻿using System.Diagnostics;
+using System.Net.Http;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 using Microsoft.Extensions.DependencyInjection;
 
 using FlowMemo.Core.Configurations;
 using FlowMemo.Core.Enums;
+using FlowMemo.Core.Sync;
 using FlowMemo.WpfUi.Helpers;
 using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Resources;
@@ -19,6 +22,7 @@ public partial class SettingsWindow : Window
     private readonly MessengerService _messengerService;
     private readonly SettingsViewModel _viewModel;
     private readonly GlobalHotkeyService _globalHotkeyService;
+    private readonly SyncService _syncService;
 
     private bool _positioned;
 
@@ -39,7 +43,166 @@ public partial class SettingsWindow : Window
         _globalHotkeyService.StatusChanged += OnHotkeyStatusChanged;
         ShowHotkeyRegistrationStatus();
 
+        _syncService = App.Services.GetRequiredService<SyncService>();
+        _syncService.StatusChanged += OnSyncStatusChanged;
+        SyncDeviceNameBox.Text = Environment.MachineName;
+        UpdateSyncPanels();
+        ErrorReporter.FireAndForget(LoadSyncDevices(), "Sync devices");
+
         Closed += Window_Closed;
+    }
+
+    // ---------------------------------------------------------------- 동기화 탭
+
+    private void OnSyncStatusChanged(object? sender, EventArgs e)
+        => UpdateSyncPanels();
+
+    private void UpdateSyncPanels()
+    {
+        bool connected = _syncService.IsConnected;
+        SyncConnectGroup.Visibility = connected ? Visibility.Collapsed : Visibility.Visible;
+        SyncConnectedPanel.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
+        SyncRecoveryGroup.Visibility = _syncService.HasRecoveryCode ? Visibility.Visible : Visibility.Collapsed;
+
+        if (!connected)
+            return;
+
+        string status = string.Format(Strings.Settings_Sync_Connected, _syncService.DeviceName, _syncService.ServerUrl);
+        if (_syncService.LastSyncAt is DateTime lastSync)
+            status += Environment.NewLine + string.Format(Strings.Settings_Sync_LastSync, lastSync);
+        if (_syncService.LastError is string error)
+            status += Environment.NewLine + error;
+        SyncStatusText.Text = status;
+    }
+
+    private async void SyncConnectButton_Click(object sender, RoutedEventArgs e)
+    {
+        string deviceName = SyncDeviceNameBox.Text.Trim();
+        if (deviceName.Length == 0)
+            deviceName = Environment.MachineName;
+
+        SyncConnectButton.IsEnabled = false;
+        SyncConnectStatus.Text = Strings.Settings_Sync_Connecting;
+        try
+        {
+            await _syncService.Connect(SyncCodeBox.Text, deviceName);
+            SyncCodeBox.Clear();
+            SyncConnectStatus.Text = "";
+            await LoadSyncDevices();
+        }
+        catch (Exception ex) when (ex is ArgumentException or SyncApiException or HttpRequestException or TaskCanceledException)
+        {
+            ErrorReporter.Log(ex, "Sync connect");
+            SyncConnectStatus.Text = ex is ArgumentException
+                ? ex.Message
+                : string.Format(Strings.Settings_Sync_ConnectFailed, ex is SyncApiException { StatusCode: 403 } ? Strings.Settings_Sync_CodeRejected : ex.Message);
+        }
+        finally
+        {
+            SyncConnectButton.IsEnabled = true;
+        }
+    }
+
+    private void SyncNowButton_Click(object sender, RoutedEventArgs e)
+        => _syncService.RequestSync();
+
+    private async void SyncCreatePairButton_Click(object sender, RoutedEventArgs e)
+    {
+        SyncCreatePairButton.IsEnabled = false;
+        try
+        {
+            SyncPairCodeBox.Text = await _syncService.CreatePairingCode();
+            SyncCopyPairButton.IsEnabled = true;
+        }
+        catch (Exception ex) when (ex is SyncApiException or HttpRequestException or TaskCanceledException)
+        {
+            ErrorReporter.Report(ex, "Sync pairing");
+        }
+        finally
+        {
+            SyncCreatePairButton.IsEnabled = true;
+        }
+    }
+
+    private void SyncCopyPairButton_Click(object sender, RoutedEventArgs e)
+        => ClipboardHelper.TrySetText(SyncPairCodeBox.Text);
+
+    private void SyncShowRecoveryButton_Click(object sender, RoutedEventArgs e)
+    {
+        SyncRecoveryCodeBox.Text = _syncService.GetRecoveryCode() ?? "";
+        SyncCopyRecoveryButton.IsEnabled = SyncRecoveryCodeBox.Text.Length > 0;
+    }
+
+    private void SyncCopyRecoveryButton_Click(object sender, RoutedEventArgs e)
+        => ClipboardHelper.TrySetText(SyncRecoveryCodeBox.Text);
+
+    private async void SyncDisconnectButton_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBoxResult answer = MessageBox.Show(
+            this,
+            Strings.Settings_Sync_DisconnectConfirm,
+            Strings.Settings_Sync_Disconnect,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No
+        );
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        SyncPairCodeBox.Clear();
+        SyncRecoveryCodeBox.Clear();
+        await _syncService.Disconnect();
+    }
+
+    private async Task LoadSyncDevices()
+    {
+        SyncDevicesPanel.Children.Clear();
+        if (!_syncService.IsConnected)
+            return;
+
+        try
+        {
+            SyncDeviceList list = await _syncService.GetDevices();
+            foreach (SyncDevice device in list.Devices)
+                SyncDevicesPanel.Children.Add(BuildSyncDeviceRow(device, device.Id == list.CurrentDeviceId));
+        }
+        catch (Exception ex) when (ex is SyncApiException or HttpRequestException or TaskCanceledException)
+        {
+            ErrorReporter.Log(ex, "Sync devices");
+        }
+    }
+
+    private Border BuildSyncDeviceRow(SyncDevice device, bool isCurrent)
+    {
+        DockPanel row = new() { LastChildFill = true };
+
+        if (!isCurrent)
+        {
+            Button revoke = new() { Content = Strings.Settings_Sync_Revoke, Padding = new Thickness(12, 4, 12, 4) };
+            revoke.Click += (_, _) => ErrorReporter.FireAndForget(RevokeSyncDevice(device), "Sync revoke");
+            DockPanel.SetDock(revoke, Dock.Right);
+            row.Children.Add(revoke);
+        }
+
+        row.Children.Add(new TextBlock { Text = isCurrent ? $"{device.Name} {Strings.Settings_Sync_ThisDevice}" : device.Name });
+        return new Border { Child = row };
+    }
+
+    private async Task RevokeSyncDevice(SyncDevice device)
+    {
+        MessageBoxResult answer = MessageBox.Show(
+            this,
+            string.Format(Strings.Settings_Sync_RevokeConfirm, device.Name),
+            Strings.Settings_Sync_Revoke,
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No
+        );
+        if (answer != MessageBoxResult.Yes)
+            return;
+
+        await _syncService.RevokeDevice(device.Id);
+        await LoadSyncDevices();
     }
 
     private void ToggleNotesHotkeyBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -156,6 +319,7 @@ public partial class SettingsWindow : Window
     {
         _messengerService.Unsubscribe<WindowActionMessage>(OnWindowActionMessage);
         _globalHotkeyService.StatusChanged -= OnHotkeyStatusChanged;
+        _syncService.StatusChanged -= OnSyncStatusChanged;
         _viewModel.Detach();
     }
 

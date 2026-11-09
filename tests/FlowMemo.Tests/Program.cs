@@ -49,7 +49,8 @@ internal static class Program
         {
             if (args[0] == "logic") Logic.Run(args[1]);
             else if (args[0] == "data") { Data.Run(args[1]); SyncTests.Units(); }
-            else if (args[0] == "sync") SyncTests.Run(args[1], args[2], args[3]);
+            else if (args[0] == "checkcode") Check("등록 코드 형식", FlowMemo.Core.Sync.SyncConnectionCode.TryParse(File.ReadAllText(args[1]), out var code) && code.Kind == FlowMemo.Core.Sync.SyncCodeKind.Setup);
+            else if (args[0] == "sync") SyncTests.Run(args[1], args[2], args[3], args[4], args[5]);
             else if (args[0] == "render") Render.Run(args[1]);
             else if (args[0] == "migrate-copy") Data.MigrateCopy(args[1], args[2]);
             else if (args[0] == "ui") Ui.Run(args[1], args[2]);
@@ -393,7 +394,9 @@ internal static class Logic
         MessengerService closeMessenger = new();
         NoteDto? closedMessage = null;
         closeMessenger.Subscribe<NoteActionMessage>(m => { if (m.Action == NoteAction.Closed) closedMessage = m.NoteDto; });
-        WindowService closeWindows = new(FlowMemo.WpfUi.App.Services, closeMessenger, closeMetadata, settings, closeRepository, new ThemeService(closeMetadata, settings));
+        SyncRepository closeSyncRepository = new(closeDb);
+        SyncService closeSync = new(closeSyncRepository, closeMessenger, closeDb);
+        WindowService closeWindows = new(FlowMemo.WpfUi.App.Services, closeMessenger, closeMetadata, settings, closeRepository, new ThemeService(closeMetadata, settings), closeSync);
         // 창을 만들다 실패하면 오류 대화 상자가 뜨므로, 테스트가 거기서 멈추지 않게 자동으로 닫는다.
         bool openDialog = RunExpectingDialog(() =>
         {

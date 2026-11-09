@@ -42,7 +42,7 @@ if ($LASTEXITCODE -ne 0) { $buildLog | Write-Host; throw '빌드 실패' }
 
 $testExe = Join-Path $PSScriptRoot 'FlowMemo.Tests\bin\Debug\net10.0-windows\FlowMemo.Tests.exe'
 
-if ($Suite -in 'all', 'ui') {
+if ($Suite -in 'all', 'ui', 'sync') {
     # 앱 복사본: 기존 테스트 DB는 지우고 포터블 모드로 둔다.
     $appBin = Join-Path $repo 'FlowMemo.WpfUi\bin\Debug\net10.0-windows'
     robocopy $appBin $appDir /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -80,7 +80,7 @@ if ($Suite -in 'all', 'sync') {
         }
         if (-not $ready) { throw '로컬 Worker가 시작되지 않았습니다.' }
 
-        & $testExe sync (Join-Path $work 'sync') $syncUrl $setupCode
+        & $testExe sync (Join-Path $work 'sync') $syncUrl $setupCode $appDir $outDir
         if ($LASTEXITCODE -ne 0) { $failed += $LASTEXITCODE }
     }
     finally {
