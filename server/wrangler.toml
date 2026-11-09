@@ -1,0 +1,10 @@
+# 로컬 개발용 설정. 배포는 deploy.ps1이 실제 D1 ID를 넣은 wrangler.deploy.toml을 만들어서 쓴다.
+name = "flowmemo-sync"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "flowmemo-sync"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

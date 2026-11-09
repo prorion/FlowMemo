@@ -1,0 +1,14 @@
+{
+  "name": "flowmemo-sync-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FlowMemo 메모 동기화 서버 (Cloudflare Workers + D1). 메모 내용은 PC에서 암호화된 채로만 저장한다.",
+  "scripts": {
+    "dev": "wrangler dev --local --port 8799",
+    "migrate:local": "wrangler d1 migrations apply flowmemo-sync --local"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
+  }
+}
