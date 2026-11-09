@@ -9,8 +9,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 
+using FlowMemo.Core;
+using FlowMemo.Core.Configurations;
+using FlowMemo.Core.DataTransferObjects;
 using FlowMemo.Core.Enums;
+using FlowMemo.Core.Repositories;
 using FlowMemo.WpfUi.Controls;
+using FlowMemo.WpfUi.Messages;
 using FlowMemo.WpfUi.Models;
 using FlowMemo.WpfUi.Resources;
 using FlowMemo.WpfUi.Services;
@@ -321,6 +326,88 @@ internal static class Logic
         settings.NoteSettings.TransparencyMode = TransparencyMode.Enabled;
         Check("투명도 모드를 바꾸면 아래 항목 활성 상태가 바로 바뀜", disabledNow && vm.IsTransparencyEnabled && changed.Count(n => n == nameof(SettingsViewModel.IsTransparencyEnabled)) == 2);
         vm.Detach();
+
+        // 잠금(읽기 전용): IsReadOnly는 사용자의 직접 입력만 막으므로, 코드로 텍스트를 바꾸는 경로를 모두 확인한다.
+        // 실패해도 붙여넣은 클립보드 내용이 로그에 남지 않게 텍스트는 출력하지 않는다.
+        void CheckLocked(string what, Action action, int selectionLength = 0)
+        {
+            tb.IsReadOnly = false;
+            SetText("abc def", selectionLength > 0 ? 0 : 3, selectionLength);
+            tb.IsReadOnly = true;
+            action();
+            Pump();
+            bool unchanged = tb.Text == "abc def";
+            tb.IsReadOnly = false;
+            Check($"잠근 메모는 바뀌지 않음: {what}", unchanged);
+        }
+
+        tb.AutoIndent = true;
+        tb.TabSpaces = true;
+        tb.TabWidth = 4;
+        tb.PasteAction = PasteAction.Paste;
+        tb.CopyAction = CopyAction.CopySelected;
+        CheckLocked("Enter", () => PressKey(tb, Key.Return));
+        CheckLocked("Tab", () => PressKey(tb, Key.Tab));
+        CheckLocked("붙여넣기", () => tb.PasteCommand.Execute(null));
+        CheckLocked("잘라내기", () => tb.CutCommand.Execute(null), selectionLength: 3);
+        CheckLocked("비우기", () => tb.ClearCommand.Execute(null));
+        CheckLocked("도구 (선택 영역 변환)", () => RunTool(Tool<HashTool>(), "SHA256"), selectionLength: 3);
+        CheckLocked("도구 (넣기)", () => RunTool(Tool<DateTimeTool>(), Strings.Tool_DateTime_Sortable));
+        tb.NewLineAtEnd = true;
+        CheckLocked("끝에 빈 줄 자동 추가", () => { for (int i = 0; i < 12; i++) { Thread.Sleep(50); Pump(); } });
+        tb.NewLineAtEnd = false;
+        tb.TabSpaces = false;
+
+        tb.IsReadOnly = false;
+        SetText("abc def", 0, 3);
+        tb.IsReadOnly = true;
+        menu.GetType().GetMethod("Update")!.Invoke(menu, null);
+        MenuItem MenuField(string name) => (MenuItem)menu.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(menu)!;
+        Check("잠근 메모의 우클릭 메뉴: 잘라내기·붙여넣기·비우기·도구 비활성, 복사는 가능",
+            !MenuField("_cutMenuItem").IsEnabled && !MenuField("_pasteMenuItem").IsEnabled && !MenuField("_clearMenuItem").IsEnabled
+            && MenuField("_copyMenuItem").IsEnabled && !Tool<HashTool>().MenuItem.IsEnabled);
+        tb.IsReadOnly = false;
+        menu.GetType().GetMethod("Update")!.Invoke(menu, null);
+
+        // 여러 줄 내어쓰기
+        MethodInfo unindent = typeof(NoteTextBoxControl).GetMethod("RemoveIndentation", BindingFlags.NonPublic | BindingFlags.Static)!;
+        string Unindent(string line, int width) => (string)unindent.Invoke(null, [line, width])!;
+        Check("여러 줄 내어쓰기: 탭 너비 2면 공백 2칸씩 뺌", Unindent("    x", 2) == "  x" && Unindent("  x", 2) == "x");
+        Check("여러 줄 내어쓰기: 공백이 탭 너비보다 적으면 있는 만큼 뺌", Unindent("  x", 4) == "x" && Unindent("   x", 4) == "x" && Unindent("     x", 4) == " x");
+        Check("여러 줄 내어쓰기: 탭은 하나만, 들여쓰기가 없으면 그대로", Unindent("\t\tx", 4) == "\tx" && Unindent("x", 4) == "x" && Unindent("", 4) == "");
+
+        // 관리 창의 '닫기': 임시 DB로 실제 메모 창을 열고 닫는다
+        string closeDbDir = Path.Combine(outDir, "close-note-db");
+        if (Directory.Exists(closeDbDir))
+            Directory.Delete(closeDbDir, recursive: true);
+        DatabaseConfiguration closeDb = new(closeDbDir);
+        DatabaseInitialiser.Initialise(closeDb.ConnectionString).GetAwaiter().GetResult();
+        NoteRepository closeRepository = new(closeDb);
+        int closeNoteId = closeRepository.Create(
+            new NoteDto(0, "관리 창에서 닫을 메모", 200, 200, 300, 300, 1, 1, "Yellow", false, true, false, null, null, null)
+        ).GetAwaiter().GetResult();
+        AppMetadataService closeMetadata = new(new AppMetadataRepository(closeDb));
+        closeMetadata.Load().GetAwaiter().GetResult();
+        MessengerService closeMessenger = new();
+        NoteDto? closedMessage = null;
+        closeMessenger.Subscribe<NoteActionMessage>(m => { if (m.Action == NoteAction.Closed) closedMessage = m.NoteDto; });
+        WindowService closeWindows = new(FlowMemo.WpfUi.App.Services, closeMessenger, closeMetadata, settings, closeRepository, new ThemeService(closeMetadata, settings));
+        // 창을 만들다 실패하면 오류 대화 상자가 뜨므로, 테스트가 거기서 멈추지 않게 자동으로 닫는다.
+        bool openDialog = RunExpectingDialog(() =>
+        {
+            closeMessenger.Publish(new MultipleNoteWindowActionMessage([closeNoteId], NoteWindowAction.Open));
+            Pump();
+        });
+        bool openedBeforeClose = !openDialog && closeWindows.IsNoteWindowOpen(closeNoteId);
+        RunExpectingDialog(() =>
+        {
+            closeMessenger.Publish(new MultipleNoteWindowActionMessage([closeNoteId], NoteWindowAction.Close));
+            Pump();
+        });
+        NoteDto closedInDb = closeRepository.GetById(closeNoteId).GetAwaiter().GetResult();
+        Check("관리 창에서 닫은 메모: '열림' 표시가 꺼지고 다음 시작 때 다시 열리지 않음",
+            openedBeforeClose && !closeWindows.IsNoteWindowOpen(closeNoteId) && closedMessage?.IsOpen == false && !closedInDb.IsOpen,
+            $"opened={openedBeforeClose} message={closedMessage?.IsOpen} db={closedInDb.IsOpen}");
 
         // 우클릭 메뉴 그림
         try

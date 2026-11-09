@@ -76,11 +76,15 @@ public partial class App : Application
         {
             await DatabaseInitialiser.Initialise(databaseConfiguration.ConnectionString, databaseConfiguration.BackupPath);
 
-            _settingsService = Services.GetRequiredService<SettingsService>();
-            await _settingsService.Load();
+            // 다 읽은 뒤에 필드에 넣는다. 먼저 넣으면 읽다가 실패했을 때
+            // 종료 처리(SaveEverything)가 아직 못 읽은 기본값으로 저장된 설정을 덮어쓴다.
+            SettingsService settingsService = Services.GetRequiredService<SettingsService>();
+            await settingsService.Load();
+            _settingsService = settingsService;
 
-            _appMetadataService = Services.GetRequiredService<AppMetadataService>();
-            await _appMetadataService.Load();
+            AppMetadataService appMetadataService = Services.GetRequiredService<AppMetadataService>();
+            await appMetadataService.Load();
+            _appMetadataService = appMetadataService;
         }
         catch (DatabaseVersionException ex)
         {

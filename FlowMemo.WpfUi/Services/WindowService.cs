@@ -209,7 +209,8 @@ public class WindowService
     {
         if (_openNoteWindows.TryGetValue(noteId, out NoteWindow? window) && window.IsLoaded)
         {
-            window.Close();
+            // 그냥 Close()하면 IsOpen이 켜진 채 저장돼 '● 열림'이 남고 다음 시작 때 다시 열렸다.
+            window.CloseByUser();
             _openNoteWindows.Remove(noteId);
         }
     }

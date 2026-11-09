@@ -63,6 +63,9 @@ public abstract class BaseTool
 
     protected void ApplyFunctionToNoteText(Func<string, Enum, string> function, Enum action)
     {
+        if (NoteTextBox.IsReadOnly)
+            return;
+
         if (NoteTextBox.HasSelectedText)
         {
             if (!TryRun(() => function(NoteTextBox.SelectedText, action), out string result))
@@ -90,6 +93,9 @@ public abstract class BaseTool
 
     protected void ApplyFunctionToEachLine(Func<string, int, Enum, string?> function, Enum action)
     {
+        if (NoteTextBox.IsReadOnly)
+            return;
+
         string noteText = (NoteTextBox.HasSelectedText) ? NoteTextBox.SelectedText : NoteTextBox.Text;
 
         string[] lines = noteText.Split(Environment.NewLine);
@@ -128,6 +134,9 @@ public abstract class BaseTool
 
     protected void InsertIntoNoteText(string text)
     {
+        if (NoteTextBox.IsReadOnly)
+            return;
+
         int caretIndex = (NoteTextBox.HasSelectedText) ? NoteTextBox.SelectionStart : NoteTextBox.CaretIndex;
         bool caretAtEnd = (caretIndex == NoteTextBox.Text.Length);
 

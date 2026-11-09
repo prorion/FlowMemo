@@ -21,4 +21,9 @@
     <ProjectReference Include="..\..\FlowMemo.WpfUi\FlowMemo.WpfUi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 메모 창의 Icon="Images/icon.ico"는 실행 파일의 리소스에서 찾으므로, 창을 프로세스 안에서 만드는 테스트에 필요하다. -->
+    <Resource Include="..\..\FlowMemo.WpfUi\Images\icon.ico" Link="Images\icon.ico" />
+  </ItemGroup>
+
 </Project>

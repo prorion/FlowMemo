@@ -139,11 +139,11 @@ public class NoteTextBoxContextMenu : ContextMenu
         UpdateSpellingErrorMenuItems();
 
         _copyMenuItem.IsEnabled = _noteTextBox.HasSelectedText;
-        _cutMenuItem.IsEnabled = _noteTextBox.HasSelectedText;
-        _pasteMenuItem.IsEnabled = ClipboardHelper.ContainsText();
+        _cutMenuItem.IsEnabled = _noteTextBox.HasSelectedText && !_noteTextBox.IsReadOnly;
+        _pasteMenuItem.IsEnabled = ClipboardHelper.ContainsText() && !_noteTextBox.IsReadOnly;
 
         _selectAllMenuItem.IsEnabled = hasText;
-        _clearMenuItem.IsEnabled = hasText;
+        _clearMenuItem.IsEnabled = hasText && !_noteTextBox.IsReadOnly;
 
         // 잠금은 저장했다가 다시 실행할 때 복원되므로, 메뉴를 열 때마다 실제 상태에 맞춘다.
         _lockedMenuItem.IsChecked = _noteTextBox.IsReadOnly;
@@ -243,6 +243,8 @@ public class NoteTextBoxContextMenu : ContextMenu
         int lastEnabledGroup = -1;
         foreach (ITool tool in activeTools)
         {
+            tool.MenuItem.IsEnabled = !_noteTextBox.IsReadOnly;
+
             switch (tool.State)
             {
                 case ToolState.Favourite:

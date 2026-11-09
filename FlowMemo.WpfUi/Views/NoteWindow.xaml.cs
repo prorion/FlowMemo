@@ -361,6 +361,10 @@ public partial class NoteWindow : Window
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
+        => CloseByUser();
+
+    /// <summary>사용자가 메모를 닫는다. 앱을 끝낼 때와 달리 다음 시작 때 다시 열리지 않는다.</summary>
+    public void CloseByUser()
     {
         _viewModel.Note.IsOpen = false;
         Close();

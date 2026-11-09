@@ -93,7 +93,7 @@ public partial class NoteTextBoxControl : TextBox
         CopyCommand = new(Copy);
         CutCommand = new(Cut);
         PasteCommand = new(Paste);
-        ClearCommand = new(Clear);
+        ClearCommand = new(ClearText);
         SetReadOnlyCommand = new(SetReadOnly);
 
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, OnCopyExecuted));
@@ -407,8 +407,19 @@ public partial class NoteTextBoxControl : TextBox
         _adorner?.InvalidateVisual();
     }
 
+    // IsReadOnly는 사용자의 직접 입력만 막는다. 이 컨트롤은 붙여넣기·잘라내기·Enter·Tab·끌어다 놓기를
+    // 코드로 직접 처리해서(SelectedText = ...) 잠금이 적용되지 않으므로, 텍스트를 바꾸는 곳마다 확인한다.
+    private void ClearText()
+    {
+        if (!IsReadOnly)
+            Clear();
+    }
+
     private void ApplySpellingSuggestion(BackgroundSpellingSuggestion suggestion)
     {
+        if (IsReadOnly)
+            return;
+
         // Replace the misspelled word with the suggestion
         int startIndex = suggestion.Error.StartIndex;
         int length = suggestion.Error.Length;
@@ -458,6 +469,9 @@ public partial class NoteTextBoxControl : TextBox
 
     private void CopyText(bool cut = false)
     {
+        if (cut && IsReadOnly)
+            return;
+
         bool useAlt = IsShiftPressed();
 
         string GetText(bool removeText)
@@ -551,6 +565,9 @@ public partial class NoteTextBoxControl : TextBox
 
     private new void Paste()
     {
+        if (IsReadOnly)
+            return;
+
         bool trimText;
         PasteAction action;
         if (IsShiftPressed())
@@ -641,7 +658,7 @@ public partial class NoteTextBoxControl : TextBox
     private void EnforceNewLineAtEnd()
     {
         // 한글 조합 중에 끝에 줄바꿈을 붙이면 조합이 끊긴다. 조합이 끝나면 RequestNewLineAtEnd로 다시 온다.
-        if (IsImeComposing || !NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
+        if (IsReadOnly || IsImeComposing || !NewLineAtEnd || Text.Length == 0 || Text.EndsWith(Environment.NewLine))
             return;
 
         // Store caret position
@@ -705,7 +722,7 @@ public partial class NoteTextBoxControl : TextBox
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
-            e.Effects = DragDropEffects.Copy;
+            e.Effects = IsReadOnly ? DragDropEffects.None : DragDropEffects.Copy;
             e.Handled = true;
         }
     }
@@ -733,6 +750,9 @@ public partial class NoteTextBoxControl : TextBox
             return;
 
         e.Handled = true;
+
+        if (IsReadOnly)
+            return;
 
         try
         {
@@ -859,6 +879,9 @@ public partial class NoteTextBoxControl : TextBox
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (IsReadOnly)
+            return;
+
         if (e.Key == Key.Tab)
         {
             e.Handled = HandledTabPressed();
@@ -981,31 +1004,7 @@ public partial class NoteTextBoxControl : TextBox
             {
                 if (IsShiftPressed(true))
                 {
-                    if (lines[i].Length > 0)
-                    {
-                        if (lines[i][0] == '\t')
-                            lines[i] = lines[i][1..];
-                        else if (lines[i][0] == ' ')
-                        {
-                            int concurrentSpaces = 0;
-                            foreach (char character in lines[i])
-                            {
-                                if (character != ' ')
-                                    break;
-                                concurrentSpaces++;
-                            }
-
-                            switch (concurrentSpaces)
-                            {
-                                case >= 4:
-                                    lines[i] = lines[i][4..];
-                                    break;
-                                case 1:
-                                    lines[i] = lines[i][concurrentSpaces..];
-                                    break;
-                            }
-                        }
-                    }
+                    lines[i] = RemoveIndentation(lines[i], EffectiveTabWidth);
                 }
                 else
                 {
@@ -1019,6 +1018,19 @@ public partial class NoteTextBoxControl : TextBox
         }
 
         return false;
+    }
+
+    /// <summary>줄 앞의 들여쓰기를 한 단계 뺀다. 탭은 하나, 공백은 탭 너비만큼 (모자라면 있는 만큼).</summary>
+    private static string RemoveIndentation(string line, int tabWidth)
+    {
+        if (line.StartsWith('\t'))
+            return line[1..];
+
+        int spaces = 0;
+        while (spaces < line.Length && spaces < tabWidth && line[spaces] == ' ')
+            spaces++;
+
+        return line[spaces..];
     }
 
     private static void OnFontPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
