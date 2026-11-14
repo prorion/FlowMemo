@@ -53,8 +53,14 @@ Name: "{autoprograms}\FlowMemo"; Filename: "{app}\FlowMemo.exe"
 Name: "{autodesktop}\FlowMemo"; Filename: "{app}\FlowMemo.exe"; Tasks: desktopicon
 
 [Registry]
-; 앱의 '시작 프로그램' 설정이 만든 값이다. 설치할 때는 건드리지 않고, 제거할 때만 지운다.
+; 앱의 '시작 프로그램' 설정이 작업 스케줄러를 쓸 수 없을 때 대신 만드는 값이다 (2.0.2 이하는 항상 여기에 썼다).
+; 설치할 때는 건드리지 않고, 제거할 때만 지운다.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "FlowMemo"; Flags: uninsdeletevalue dontcreatekey
 
 [Run]
 Filename: "{app}\FlowMemo.exe"; Description: "{cm:LaunchProgram,FlowMemo}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+; 앱의 '시작 프로그램' 설정이 만든 작업 스케줄러 작업을 지운다.
+; 이름은 StartupRegistration.TaskNameFor와 같아야 한다: "FlowMemo (사용자 이름)". 없으면 schtasks가 실패만 하고 넘어간다.
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""FlowMemo ({username})"" /F"; Flags: runhidden; RunOnceId: "DeleteStartupTask"

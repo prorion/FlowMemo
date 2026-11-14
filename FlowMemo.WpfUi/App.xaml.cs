@@ -111,7 +111,8 @@ public partial class App : Application
         _notifyIconService = Services.GetRequiredService<NotifyIconService>();
         _globalHotkeyService = Services.GetRequiredService<GlobalHotkeyService>();
 
-        RefreshStartupRegistration();
+        // schtasks.exe를 실행하므로 메모를 띄우는 것을 기다리게 하지 않는다.
+        ErrorReporter.FireAndForget(Task.Run(RefreshStartupRegistration), "Startup registration");
 
         MessengerService messengerService = Services.GetRequiredService<MessengerService>();
         messengerService.Subscribe<ApplicationActionMessage>(OnApplicationActionMessage);
@@ -192,11 +193,15 @@ public partial class App : Application
         }
     }
 
+    /// <summary>자동 실행이 켜져 있으면 지금 실행 파일로 다시 등록하고, 예전 Run 키 등록은 작업 스케줄러로 옮긴다.</summary>
     private static void RefreshStartupRegistration()
     {
         try
         {
-            StartupRegistration.Current.RefreshPath();
+            StartupRegistration registration = StartupRegistration.Current;
+            registration.Refresh();
+            if (registration.LastTaskError is string error)
+                ErrorReporter.Log(new InvalidOperationException(error), "Startup registration: 작업 스케줄러 대신 Run 키 사용");
         }
         catch (Exception ex)
         {

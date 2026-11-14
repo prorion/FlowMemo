@@ -529,33 +529,82 @@ internal static class Logic
         Check("단축키 형식: 수정 키가 없거나 잘못된 값은 거부",
             new[] { "H", "Ctrl", "Ctrl+Shift", "Ctrl+12", "Foo+H", "", null }.All(text => !HotkeyGesture.TryParse(text, out _)));
 
-        // 시작 프로그램 등록: 실제 Run 키 대신 테스트용 키에 쓴다
+        // 시작 프로그램 등록: 실제 Run 키·작업 대신 테스트용 키와 가짜 작업 스케줄러를 쓴다
         const string startupTestRoot = @"Software\FlowMemoTests";
         string startupTestKey = startupTestRoot + @"\Run";
+        const string startupTestTask = "FlowMemo-Test (시험 사용자)";
+        string userSid = System.Security.Principal.WindowsIdentity.GetCurrent().User!.Value;
         try
         {
-            StartupRegistration registration = new("FlowMemo-Test", @"C:\앱 폴더\FlowMemo.exe", startupTestKey);
-            string? StoredCommand()
+            FakeStartupTasks fakeTasks = new();
+            StartupRegistration Registration(string exe) => new("FlowMemo-Test", startupTestTask, exe, fakeTasks, startupTestKey);
+            string? RunValue()
             {
                 using Microsoft.Win32.RegistryKey? key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(startupTestKey);
                 return key?.GetValue("FlowMemo-Test") as string;
             }
 
+            StartupRegistration registration = Registration(@"C:\앱 폴더\FlowMemo.exe");
             bool offAtFirst = !registration.IsEnabled;
             registration.SetEnabled(true);
-            Check("시작 프로그램 등록: 켜면 따옴표로 감싼 경로를 저장", offAtFirst && registration.IsEnabled && StoredCommand() == "\"C:\\앱 폴더\\FlowMemo.exe\"", StoredCommand() ?? "null");
+            string taskXml = fakeTasks.Xml(startupTestTask) ?? "";
+            Check("시작 프로그램: 켜면 Run 키가 아니라 작업 스케줄러의 '로그온할 때' 작업으로 등록 (Windows의 시작 프로그램 지연을 피함)",
+                offAtFirst && registration.IsEnabled && RunValue() is null && taskXml.Contains("<LogonTrigger>")
+                && taskXml.Contains(@"<Command>C:\앱 폴더\FlowMemo.exe</Command>") && taskXml.Contains("<Arguments>--autostart</Arguments>"),
+                Esc(taskXml.Length > 300 ? taskXml[..300] : taskXml));
+            Check("시작 프로그램 작업: 현재 사용자, 관리자 권한 없이, 배터리·실행 시간 제한 없이, 보통 우선순위, 중복 실행 안 함",
+                taskXml.Contains($"<UserId>{userSid}</UserId>") && taskXml.Contains("<LogonType>InteractiveToken</LogonType>")
+                && taskXml.Contains("<RunLevel>LeastPrivilege</RunLevel>") && taskXml.Contains("<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>")
+                && taskXml.Contains("<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>") && taskXml.Contains("<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>")
+                && taskXml.Contains("<Priority>4</Priority>") && taskXml.Contains("<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>"));
 
-            new StartupRegistration("FlowMemo-Test", @"D:\옮긴 곳\FlowMemo.exe", startupTestKey).RefreshPath();
-            Check("시작 프로그램 등록: 실행 파일을 옮기면 경로를 고침", StoredCommand() == "\"D:\\옮긴 곳\\FlowMemo.exe\"", StoredCommand() ?? "null");
+            const string trickyPath = @"C:\A&B <메모>\FlowMemo.exe";
+            System.Xml.Linq.XNamespace taskNs = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+            System.Xml.Linq.XDocument parsedTask = System.Xml.Linq.XDocument.Parse(StartupRegistration.BuildTaskXml(userSid, trickyPath));
+            Check("작업 정의는 올바른 XML (경로의 &·< 같은 문자도 그대로 전달)",
+                parsedTask.Descendants(taskNs + "Command").Single().Value == trickyPath
+                && parsedTask.Descendants(taskNs + "WorkingDirectory").Single().Value == @"C:\A&B <메모>");
+
+            Registration(@"D:\옮긴 곳\FlowMemo.exe").Refresh();
+            Check("시작 프로그램: 실행 파일을 옮기면 작업을 새 경로로 다시 등록",
+                fakeTasks.Xml(startupTestTask)?.Contains(@"<Command>D:\옮긴 곳\FlowMemo.exe</Command>") == true);
 
             registration.SetEnabled(false);
-            registration.RefreshPath();
-            Check("시작 프로그램 등록: 끄면 지우고, 꺼진 상태에서는 경로 갱신이 다시 만들지 않음", !registration.IsEnabled && StoredCommand() is null);
+            registration.Refresh();
+            Check("시작 프로그램: 끄면 작업을 지우고, 꺼진 상태에서는 다시 만들지 않음", !registration.IsEnabled && fakeTasks.Count == 0 && RunValue() is null);
+
+            // 2.0.2 이하는 Run 키에 등록했다
+            using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(startupTestKey))
+                key.SetValue("FlowMemo-Test", "\"C:\\앱 폴더\\FlowMemo.exe\"");
+            registration.Refresh();
+            Check("시작 프로그램: 예전 버전의 Run 키 등록은 작업으로 옮기고 Run 키는 지움", fakeTasks.Xml(startupTestTask) is not null && RunValue() is null);
+            registration.SetEnabled(false);
+
+            fakeTasks.Fail = true;
+            registration.SetEnabled(true);
+            Check("시작 프로그램: 작업을 만들 수 없는 환경이면 Run 키에 대신 등록",
+                registration.IsEnabled && RunValue() == "\"C:\\앱 폴더\\FlowMemo.exe\" --autostart" && registration.LastTaskError is not null, RunValue() ?? "null");
+            registration.SetEnabled(false);
+            Check("시작 프로그램: Run 키로 대신 등록한 것도 끄면 지움", !registration.IsEnabled && RunValue() is null);
         }
         finally
         {
             Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(startupTestRoot, throwOnMissingSubKey: false);
         }
+
+        // 실제 작업 스케줄러: '사용 안 함' 상태의 시험 작업을 만들었다가 바로 지운다 (실행되지 않는다)
+        SchtasksClient schtasks = new();
+        string realTestTask = $"FlowMemo-Test-{Guid.NewGuid():N}";
+        try
+        {
+            bool registered = schtasks.Register(realTestTask, StartupRegistration.BuildTaskXml(userSid, @"C:\없는 폴더\FlowMemo.exe", enabled: false), out string taskError);
+            Check("작업 스케줄러: 작업 정의를 실제로 등록할 수 있음 (사용 안 함 상태로 시험)", registered && schtasks.Exists(realTestTask), taskError);
+        }
+        finally
+        {
+            schtasks.Delete(realTestTask);
+        }
+        Check("작업 스케줄러: 시험 작업을 지움", !schtasks.Exists(realTestTask));
 
         // 트레이 아이콘과 트레이 전용은 함께 움직인다 (둘 다 없으면 앱을 열 방법이 없다)
         ApplicationSettingsModel trayModel = new();
