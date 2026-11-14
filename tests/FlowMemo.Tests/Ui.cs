@@ -29,6 +29,7 @@ internal static class Ui
             ("D", ScenarioEmptyManagement),
             ("E", ScenarioTrash),
             ("F", ScenarioLockRestoredAndDataFolder),
+            ("G", ScenarioOffscreenNotesAndStartupLog),
         ];
         foreach ((string name, Action run) in scenarios)
         {
@@ -285,8 +286,8 @@ internal static class Ui
     }
 
     // UseShellExecute = true: 콘솔 핸들을 물려주지 않는다 (물려주면 앱이 남아 있는 동안 출력 파이프가 안 닫혀 셸이 멈춘다).
-    private static Process Launch()
-        => Process.Start(new ProcessStartInfo(_exe) { WorkingDirectory = _appDir, UseShellExecute = true })!;
+    private static Process Launch(string arguments = "")
+        => Process.Start(new ProcessStartInfo(_exe, arguments) { WorkingDirectory = _appDir, UseShellExecute = true })!;
 
     private static bool Wait(Func<bool> condition, int ms = 8000)
     {
@@ -853,6 +854,48 @@ internal static class Ui
         Capture(settings, "F2_settings_data.png");
 
         CheckLog("F");
+        Kill(p);
+    }
+
+    private static void ScenarioOffscreenNotesAndStartupLog()
+    {
+        Console.WriteLine("== UI 시나리오 G: 화면 밖 메모 여러 개 · 시작 기록");
+        ResetDb(c =>
+        {
+            InsertNote(c, "화면 밖 하나\r\n", -6000, -6000, "Blue", false, true);
+            InsertNote(c, "화면 밖 둘\r\n", -7000, -7000, "Green", false, true);
+            InsertNote(c, "닫아 둔 메모\r\n", 200, 200, "Pink", false, false);
+        });
+        string startupLog = Path.Combine(_appDir, "logs", "startup.log");
+        if (File.Exists(startupLog))
+            File.Delete(startupLog);
+        string ReadStartupLog() => File.Exists(startupLog) ? File.ReadAllText(startupLog) : "";
+
+        Process p = Launch();
+        Check("화면 밖에 저장된 메모 2개가 모두 열림", Wait(() => NoteWindows(p.Id).Count == 2), $"windows={NoteWindows(p.Id).Count}");
+        Thread.Sleep(800);
+        List<IntPtr> notes = NoteWindows(p.Id);
+        if (notes.Count == 2)
+        {
+            Native.RECT first = Native.Rect(notes[0]), second = Native.Rect(notes[1]);
+            Check("화면 밖 메모를 옮길 때 같은 자리에 겹쳐 놓지 않음 (예전에는 하나가 다른 하나에 완전히 가려졌다)",
+                notes.All(Native.OnScreen) && (Math.Abs(first.Left - second.Left) > 20 || Math.Abs(first.Top - second.Top) > 20), $"{first} / {second}");
+            Capture(notes[0], "G1_moved_note.png");
+        }
+
+        Check("시작 기록: logs\\startup.log에 직접 실행·열린 메모 수/전체·옮긴 메모 수",
+            Wait(() => ReadStartupLog().Contains("직접 실행") && ReadStartupLog().Contains("열린 메모 2/3개") && ReadStartupLog().Contains("화면 밖이라 옮긴 메모 2개"), 5000),
+            Esc(ReadStartupLog()));
+        Check("시작 기록에 메모 내용은 남기지 않음", !ReadStartupLog().Contains("화면 밖 하나") && !ReadStartupLog().Contains("닫아 둔"));
+        Kill(p);
+
+        // 자동 실행(작업 스케줄러·Run 키가 넘기는 인수)으로 시작하면 로그온 뒤 몇 초에 시작했는지도 남긴다
+        p = Launch(FlowMemo.WpfUi.Helpers.StartupRegistration.AutostartArgument);
+        Check("시작 기록: 자동 실행이면 로그온 뒤 시작까지 걸린 시간",
+            Wait(() => ReadStartupLog().Contains("자동 실행 (로그온 ") && ReadStartupLog().Contains("화면 밖이라 옮긴 메모 0개"), 8000),
+            Esc(ReadStartupLog()));
+
+        CheckLog("G");
         Kill(p);
     }
 }

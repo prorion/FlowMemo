@@ -161,6 +161,7 @@ public class WindowService
 
     private async Task DoStartUpAction()
     {
+        _movedOnScreenCount = 0;
         switch (_settingsService.ApplicationSettings.StartupBehaviour)
         {
             case StartupBehaviour.RestoreOpenNotes:
@@ -169,7 +170,7 @@ public class WindowService
                 if (!openNotes.Any()) // Fallback to new instance action if no notes open
                 {
                     DoNewInstanceAction();
-                    return;
+                    break;
                 }
 
                 foreach (NoteDto note in openNotes)
@@ -183,7 +184,16 @@ public class WindowService
                 OpenManagementWindow();
                 break;
         }
+
+        // 창이 실제로 그려진 뒤(할 일이 없을 때)에 기록한다.
+        int totalNotes = (await _noteRepository.GetAll()).Count();
+        _ = Application.Current.Dispatcher.BeginInvoke(
+            System.Windows.Threading.DispatcherPriority.ApplicationIdle,
+            () => StartupLog.Record(_openNoteWindows.Count, totalNotes, _movedOnScreenCount)
+        );
     }
+
+    private int _movedOnScreenCount;
 
     private void DoNewInstanceAction()
     {
@@ -272,6 +282,8 @@ public class WindowService
 
         NoteViewModel viewModel = new(_noteRepository, _appMetadataService, _settingsService, _messengerService, _themeService, _syncService);
         await viewModel.Initialize(noteId, parentNote, managementWindowHandle);
+        if (viewModel.MovedOnScreen)
+            _movedOnScreenCount++;
 
         NoteWindow window = new(_settingsService, _messengerService, _themeService, viewModel);
         int id = viewModel.Note.Id;

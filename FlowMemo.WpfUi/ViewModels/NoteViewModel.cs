@@ -375,11 +375,18 @@ public class NoteViewModel : BaseViewModel
 
         const int screenMargin = 78;
         Rect workArea = ScreenHelper.GetPrimaryScreenBounds();
-        Note.X = workArea.Left + screenMargin;
-        Note.Y = workArea.Top + screenMargin;
         Note.GravityX = 1;
         Note.GravityY = 1;
+
+        // 예전에는 화면 밖 메모를 모두 같은 자리로 옮겨서, 여러 개면 정확히 겹쳐 하나만 보였다.
+        Point position = AvoidOtherNotes(new Point(workArea.Left + screenMargin, workArea.Top + screenMargin), workArea);
+        Note.X = position.X;
+        Note.Y = position.Y;
+        MovedOnScreen = true;
     }
+
+    /// <summary>화면 밖에 저장돼 있어서 화면 안으로 옮겼는지 (시작 기록에 쓴다).</summary>
+    public bool MovedOnScreen { get; private set; }
 
     private void InitNotePosition(NoteModel? parent = null, nint? managementWindowHandle = null)
     {
@@ -451,43 +458,48 @@ public class NoteViewModel : BaseViewModel
             }
         }
 
-        // Apply noteMargin if another note is already in that position
-        if (Application.Current.Windows.Count > 1)
-        {
-            Window[] otherWindows = new Window[Application.Current.Windows.Count];
-            Application.Current.Windows.CopyTo(otherWindows, 0);
-
-            // 예전에는 Left/Top을 ==로 비교했다. 125% 배율 등에서는 창 위치가 픽셀→DIP 변환을 거쳐
-            // 78이 78.4가 되므로 같은 자리로 보지 않았고, 새 메모가 기존 메모와 정확히 겹쳐 열렸다
-            // (기존 메모가 고정돼 있으면 새 메모가 그 뒤에 완전히 가려졌다 — 실제 사용 중 발견).
-            const double sameSpotTolerance = 8;
-            bool IsOccupied(Point p) => otherWindows.Any(w =>
-                Math.Abs(w.Left - p.X) < sameSpotTolerance && Math.Abs(w.Top - p.Y) < sameSpotTolerance);
-
-            while (IsOccupied(position))
-            {
-                double newX = position.X + (noteMargin * Note.GravityX);
-                if (newX < screenBounds.Left)
-                    newX = screenBounds.Left;
-                else if (newX + Note.Width > screenBounds.Right)
-                    newX = screenBounds.Right - Note.Width;
-
-                double newY = position.Y + (noteMargin * Note.GravityY);
-                if (newY < screenBounds.Top)
-                    newY = screenBounds.Top;
-                else if (newY + Note.Height > screenBounds.Bottom)
-                    newY = screenBounds.Bottom - Note.Height;
-
-                if (position.X == newX && position.Y == newY)
-                    break;
-
-                position.X = newX;
-                position.Y = newY;
-            }
-        }
+        position = AvoidOtherNotes(position, screenBounds, noteMargin);
 
         Note.X = position.X;
         Note.Y = position.Y;
+    }
+
+    /// <summary>다른 메모가 이미 그 자리에 있으면 메모의 방향(Gravity)으로 조금씩 비켜 놓는다.</summary>
+    private Point AvoidOtherNotes(Point position, Rect screenBounds, int noteMargin = 45)
+    {
+        Window[] otherWindows = [.. Application.Current.Windows.Cast<Window>()];
+        if (otherWindows.Length == 0)
+            return position;
+
+        // 예전에는 Left/Top을 ==로 비교했다. 125% 배율 등에서는 창 위치가 픽셀→DIP 변환을 거쳐
+        // 78이 78.4가 되므로 같은 자리로 보지 않았고, 새 메모가 기존 메모와 정확히 겹쳐 열렸다
+        // (기존 메모가 고정돼 있으면 새 메모가 그 뒤에 완전히 가려졌다 — 실제 사용 중 발견).
+        const double sameSpotTolerance = 8;
+        bool IsOccupied(Point p) => otherWindows.Any(w =>
+            Math.Abs(w.Left - p.X) < sameSpotTolerance && Math.Abs(w.Top - p.Y) < sameSpotTolerance);
+
+        while (IsOccupied(position))
+        {
+            double newX = position.X + (noteMargin * Note.GravityX);
+            if (newX < screenBounds.Left)
+                newX = screenBounds.Left;
+            else if (newX + Note.Width > screenBounds.Right)
+                newX = screenBounds.Right - Note.Width;
+
+            double newY = position.Y + (noteMargin * Note.GravityY);
+            if (newY < screenBounds.Top)
+                newY = screenBounds.Top;
+            else if (newY + Note.Height > screenBounds.Bottom)
+                newY = screenBounds.Bottom - Note.Height;
+
+            if (position.X == newX && position.Y == newY)
+                break;
+
+            position.X = newX;
+            position.Y = newY;
+        }
+
+        return position;
     }
 
     private void UpdateBrushes()
