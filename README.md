@@ -38,7 +38,7 @@ FlowMemo는 [63BeetleSmurf](https://github.com/63BeetleSmurf)의 [Pinny Notes](h
 - **트레이 아이콘:** 모든 메모를 앞으로 가져오거나 새 메모를 엽니다.
 - **트레이 전용 실행:** 메모·관리·설정 창을 작업 표시줄에 표시하지 않고 트레이로만 관리합니다(기본값, 설정에서 끌 수 있습니다).
 - **모든 메모 보기/숨기기:** 트레이 메뉴나 전역 단축키(기본 Ctrl+Alt+H, 설정에서 변경)로 한 번에 숨기고 다시 띄웁니다.
-- **Windows 시작할 때 자동 실행**
+- **Windows 시작할 때 자동 실행:** 작업 스케줄러의 '로그온할 때' 작업으로 등록해 로그온하자마자 메모를 띄웁니다.
 - **작업 표시줄 / Alt+Tab 표시 여부 설정**
 - **텍스트 잠금:** 메모를 읽기 전용으로 바꿉니다. 다시 실행해도 유지됩니다.
 
@@ -63,7 +63,7 @@ dotnet build FlowMemo.WpfUi -c Release
 
 실행 파일은 `FlowMemo.WpfUi\bin\Release\net10.0-windows\FlowMemo.exe`에 생깁니다.
 
-- **데이터 위치:** 기본은 `%APPDATA%\FlowMemo\flowmemo.sqlite`입니다. 설정 → 앱 → 데이터에서 폴더를 열 수 있습니다.
+- **데이터 위치:** 기본은 `%APPDATA%\FlowMemo\flowmemo.sqlite`입니다. 설정 → 앱 → 데이터에서 폴더를 열 수 있습니다. 같은 폴더의 `logs\`에 오류 기록(`error.log`)과 시작 기록(`startup.log`: 로그온 뒤 실행까지·메모 표시까지 걸린 시간, 열린 메모 수)이 있습니다.
 - **백업:** 같은 폴더의 `backups\`에 날짜별 백업(`flowmemo-yyyyMMdd.sqlite`, 최근 7개)과 DB 형식을 올리기 직전의 백업(`flowmemo-before-v4-….sqlite`)이 있습니다. 되돌리려면 FlowMemo를 끝내고(알림 영역 아이콘 → 끝내기) 백업 파일을 `flowmemo.sqlite` 자리에 복사합니다.
 - **포터블 모드:** `FlowMemo.exe` 옆에 빈 `portable.txt` 파일을 두면 DB를 exe 폴더에 만듭니다.
 - **설치 파일:** `winget install JRSoftware.InnoSetup`으로 Inno Setup을 설치한 뒤 `installer\build.ps1`을 실행하면 `installer\output\FlowMemo-Setup-<버전>.exe`가 생깁니다. .NET을 함께 넣으므로 설치하는 PC에 .NET이 없어도 되고, 관리자 권한 없이 `%LocalAppData%\Programs\FlowMemo`에 설치됩니다. 코드 서명이 없어 처음 실행할 때 SmartScreen 경고가 뜨면 **추가 정보 → 실행**을 누릅니다. 업데이트와 제거를 해도 메모는 남습니다.

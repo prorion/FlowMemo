@@ -8,7 +8,7 @@
     - 설치 파일 버전은 FlowMemo.Setup/FlowMemo.Setup.vdproj의 ProductVersion도 같이 바꾼다.
   -->
   <PropertyGroup>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <Product>FlowMemo</Product>
   </PropertyGroup>
 
